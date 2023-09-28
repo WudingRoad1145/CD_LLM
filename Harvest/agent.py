@@ -4,6 +4,17 @@ from pprint import pprint
 from langchain.schema import HumanMessage, AIMessage
 from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from world import World, WorldError
+import numpy as np
+
+# basic moves every agent should do
+BASE_ACTIONS = {
+    0: "MOVE_LEFT",  # Move left
+    1: "MOVE_RIGHT",  # Move right
+    2: "MOVE_UP",  # Move up
+    3: "MOVE_DOWN",  # Move down
+    4: "STAY",  # don't move
+    5: "COLLECT",  # collect apple
+}
 
 class AgentError(Exception):
     """
@@ -11,6 +22,7 @@ class AgentError(Exception):
     """
 
     pass
+
 
 class Agent():
     def __init__(self, world: World, name: str, strategy: str, chat_model: str = 'gpt-4',
@@ -20,12 +32,12 @@ class Agent():
         Options for chat_model keyword:[gpt-3.5-turbo, gpt-4, gpt-4-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613, text-davinci-003, gpt-4-32k, gpt-4-32k-0613]
         """
         self.name = name
-        self.strategy = strategy
-        # user order to commander. e.g. "You should collaborate with your teammates to kill enemy_1."
+        self.strategy = strategy # high level strategy for the player. e.g. you want to maximize your own benefits but not harm others
         self.world = world
+        self.points = 0 # initialize # apples collected
         # get json API key from api_key/llm_api_key.json
         if custom_key:
-            with open('api_key/llm_api_keys.json', 'r') as file:
+            with open('Harvest/llm_api_keys.json', 'r') as file:
                 api_keys = json.load(file)
 
         if 'gpt' in chat_model:
@@ -54,17 +66,31 @@ class Agent():
         self.message_history = []
         self.remaining_retry_times = self.max_retry_times
 
-    # def update_strategy(self, strategy):
-    #     """
-    #     This function updates the strategy for the commander.
-    #     """
-    #     self.strategy = strategy
+    def collect_apple(self, x, y):
+        """
+        Logic for the agent to collect an apple at position (x, y).
+        """
+        if self.world.is_apple_at(x, y): #TODO
+            self.world.remove_apple(x, y) #TODO
+            self.points += 1
+            
+    def execute(self):
+        action, error_message = self.take_action()
+        if error_message is not None:
+            #TODO: return error message not raise
+            # raise world.WorldError(error_message)
+            # TODO: give this to commander
+            return
+        if "MOVE" in action:
+            _, dir = action.split(" ")
+            self._move(dir)
+        elif "ATTACK" in action:
+            _, target_id = action.split(" ")
+            self._attack(int(target_id))
+        elif "STAY" in action:
+            self._stay()
 
     def get_input_prompt(self) -> str:
-        # schema for agent: {"id": self.id, "name": self.name, "x": self.x, "y": self.y, "stamina": self.stamina,
-        #  "commander_id": self.commander_id, "order": self.last_order}
-        # all_agents = self.world.get_all_agents()
-
         all_instances = self.world.get_all_instances()
         n_agents = len([s for s in all_instances if s.object_type ==
                          ObjectType.Agent and s.commander_id == self.id and s.stamina > 0])
@@ -114,7 +140,7 @@ This is the current game state:
 
 ---
 
-You have the option of proposing a contract to the other players to prevent overconsume apples. If the contract is agreed by the majority, it will be enforced. If you want to propose such a contract, please follow the format {contract} and decide the variable X. If you don't want to propose such a contract, simply type "no contract".
+You have the option of proposing a contract to the other players to prevent overconsume apples. If the contract is agreed by the majority, it will be enforced. If you want to propose such a contract, please follow the format {contract} and decide the variable X. If you don't want to propose such a contract, simply 
 
 ---
 
