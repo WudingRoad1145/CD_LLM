@@ -37,7 +37,7 @@ class Agent():
         self.points = 0 # initialize # apples collected
         # get json API key from api_key/llm_api_key.json
         if custom_key:
-            with open('Harvest/llm_api_keys.json', 'r') as file:
+            with open('api_key/llm_api_keys.json', 'r') as file:
                 api_keys = json.load(file)
 
         if 'gpt' in chat_model:
