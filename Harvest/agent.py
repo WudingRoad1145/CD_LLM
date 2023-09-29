@@ -25,7 +25,7 @@ class AgentError(Exception):
 
 
 class Agent():
-    def __init__(self, world: World, name: str, strategy: str, chat_model: str = 'gpt-4',
+    def __init__(self, world: World, name: str, strategy: str, rewards: int = 0, scope: int = 5, chat_model: str = 'gpt-4',
                  max_retry_times: int = 5, custom_key: str = None, custom_key_path: str = 'api_key/llm_api_keys.json'):
         """
         This function initializes the LLM agent.
@@ -34,7 +34,7 @@ class Agent():
         self.name = name
         self.strategy = strategy # high level strategy for the player. e.g. you want to maximize your own benefits but not harm others
         self.world = world
-        self.points = 0 # initialize # apples collected
+        self.rewards = 0 # initialize # apples collected
         # get json API key from api_key/llm_api_key.json
         if custom_key:
             with open('api_key/llm_api_keys.json', 'r') as file:
@@ -59,6 +59,7 @@ class Agent():
         self.message_history = []
         self.max_retry_times = max_retry_times
         self.remaining_retry_times = max_retry_times
+        self.scope = scope
 
         self.id = world.add_instance(self)
 
@@ -66,14 +67,38 @@ class Agent():
         self.message_history = []
         self.remaining_retry_times = self.max_retry_times
 
+    def propose_contract(self):
+        '''TODO give the world state within scope to the agent: agents receive their position and
+            orientation, the coordinates and orientation of the closest other
+            agent, the position of the nearest apple, the number of apples close
+            to the agent, the number of total apples, and the number of apples
+            eaten by each agent in the last timestep.
+        '''
+        contract = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer x apples to the other agents, which is equally distributed to the other agents."
+
     def collect_apple(self, x, y):
         """
         Logic for the agent to collect an apple at position (x, y).
         """
         if self.world.is_apple_at(x, y): #TODO
             self.world.remove_apple(x, y) #TODO
-            self.points += 1
+            self.rewards += 1
             
+    def _move(self, dir):
+        # TODO: optimize this part
+        self.world.map[self.y][self.x].remove(self.id)
+        for id in self.world.map[self.y][self.x]:
+            instance = self.world.instances[id]
+            if instance.object_type == ObjectType.Hospital:
+                instance.release()
+        self.x += self.directions[dir][0]
+        self.y += self.directions[dir][1]
+        self.world.map[self.y][self.x].append(self.id)
+        for id in self.world.map[self.y][self.x]:
+            instance = self.world.instances[id]
+            if instance.object_type == ObjectType.Hospital:
+                instance.occupy()
+
     def execute(self):
         action, error_message = self.take_action()
         if error_message is not None:
@@ -84,7 +109,7 @@ class Agent():
         if "MOVE" in action:
             _, dir = action.split(" ")
             self._move(dir)
-        elif "ATTACK" in action:
+        elif "COLLECT" in action:
             _, target_id = action.split(" ")
             self._attack(int(target_id))
         elif "STAY" in action:
