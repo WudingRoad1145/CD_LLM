@@ -6,16 +6,6 @@ from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from world import World, WorldError
 import numpy as np
 
-# basic moves every agent should do
-BASE_ACTIONS = {
-    0: "MOVE_LEFT",  # Move left
-    1: "MOVE_RIGHT",  # Move right
-    2: "MOVE_UP",  # Move up
-    3: "MOVE_DOWN",  # Move down
-    4: "STAY",  # don't move
-    5: "COLLECT",  # collect apple
-}
-
 class AgentError(Exception):
     """
     Exception raised for errors in commander. To feed back into the chatbot.
@@ -25,7 +15,7 @@ class AgentError(Exception):
 
 
 class Agent():
-    def __init__(self, world: World, name: str, strategy: str, rewards: int = 0, scope: int = 5, chat_model: str = 'gpt-4',
+    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0, scope: int = 5, chat_model: str = 'gpt-4',
                  max_retry_times: int = 5, custom_key: str = None, custom_key_path: str = 'api_key/llm_api_keys.json'):
         """
         This function initializes the LLM agent.
@@ -33,11 +23,13 @@ class Agent():
         """
         self.name = name
         self.strategy = strategy # high level strategy for the player. e.g. you want to maximize your own benefits but not harm others
+        self.x = x
+        self.y = y
         self.world = world
-        self.rewards = 0 # initialize # apples collected
+        self.rewards = 0 # initialize num apples collected
         # get json API key from api_key/llm_api_key.json
         if custom_key:
-            with open('api_key/llm_api_keys.json', 'r') as file:
+            with open(custom_key_path, 'r') as file:
                 api_keys = json.load(file)
 
         if 'gpt' in chat_model:
@@ -60,6 +52,7 @@ class Agent():
         self.max_retry_times = max_retry_times
         self.remaining_retry_times = max_retry_times
         self.scope = scope
+        self.just_collected_apple = 0
 
         self.id = world.add_instance(self)
 
@@ -67,90 +60,100 @@ class Agent():
         self.message_history = []
         self.remaining_retry_times = self.max_retry_times
 
-    def propose_contract(self):
-        '''TODO give the world state within scope to the agent: agents receive their position and
-            orientation, the coordinates and orientation of the closest other
-            agent, the position of the nearest apple, the number of apples close
-            to the agent, the number of total apples, and the number of apples
-            eaten by each agent in the last timestep.
-        '''
-        contract = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer x apples to the other agents, which is equally distributed to the other agents."
-
-    def collect_apple(self, x, y):
-        """
-        Logic for the agent to collect an apple at position (x, y).
-        """
-        if self.world.is_apple_at(x, y): #TODO
-            self.world.remove_apple(x, y) #TODO
-            self.rewards += 1
-            
-    def _move(self, dir):
-        # TODO: optimize this part
-        self.world.map[self.y][self.x].remove(self.id)
-        for id in self.world.map[self.y][self.x]:
-            instance = self.world.instances[id]
-            if instance.object_type == ObjectType.Hospital:
-                instance.release()
-        self.x += self.directions[dir][0]
-        self.y += self.directions[dir][1]
-        self.world.map[self.y][self.x].append(self.id)
-        for id in self.world.map[self.y][self.x]:
-            instance = self.world.instances[id]
-            if instance.object_type == ObjectType.Hospital:
-                instance.occupy()
-
-    def execute(self):
-        action, error_message = self.take_action()
-        if error_message is not None:
-            #TODO: return error message not raise
-            # raise world.WorldError(error_message)
-            # TODO: give this to commander
-            return
-        if "MOVE" in action:
-            _, dir = action.split(" ")
-            self._move(dir)
-        elif "COLLECT" in action:
-            _, target_id = action.split(" ")
-            self._attack(int(target_id))
-        elif "STAY" in action:
-            self._stay()
-
+    # TODO decide whether put this in world.py
     def get_input_prompt(self) -> str:
         all_instances = self.world.get_all_instances()
-        n_agents = len([s for s in all_instances if s.object_type ==
-                         ObjectType.Agent and s.commander_id == self.id and s.stamina > 0])
         current_game_state = [
             [[] for _ in range(self.world.x_size)] for _ in range(self.world.y_size)]
         for instance in all_instances:
-            match instance.object_type:
-                case ObjectType.Soldier:
-                    # check if soldier is my soldier or enemy's
-                    if instance.commander_id == self.id:
-                        # then add its information onto the current_game_state in this format:
-                        # soldier_5 {"stamina": 2, "current_order": "GO enemy_3"}
-                        current_game_state[instance.y][instance.x].append(
-                            f"soldier_{instance.name} {{\"stamina\": {instance.stamina}, \"current_order\": \"{instance.order}\"}}")
-                    else:
-                        # then add its information onto the current_game_state in this format:
-                        # enemy_5 {"stamina": 2, "current_order": "GO enemy_3"}
-                        current_game_state[instance.y][instance.x].append(
-                            f"enemy_{instance.name} {{\"stamina\": {instance.stamina}, \"current_order\": \"{instance.order}\"}}")
-                case ObjectType.Hospital:
-                    # add the hospital information onto the current_game_state in this format: hospital {"state": full / have extra room}
-                    hospital_state = "full" if instance.capacity == instance.occupancy else "have extra room"
-                    current_game_state[instance.y][instance.x].append(
-                        f"{instance.name} {{\"state\": {hospital_state}}}")
+            if instance.name == "Apple":
+                current_game_state[instance.y][instance.x] = "Apple"
+            else:
+                current_game_state[instance.y][instance.x].append(
+                    f"{instance.name} {{\"last_collected\": {instance.just_collected_apple}, \"rewards\": {instance.rewards}}}")
 
         current_game_state = [
             [" and ".join(i) if i != [] else "" for i in j] for j in current_game_state]
         current_game_state = "\n".join(
             ["|".join(row) for row in current_game_state])
+        return current_game_state
 
+    def propose_contract(self, scope):
+        '''TODO give the world state to the agent, but how are we getting the state? do we make a new function in world or use the get_input_prompt? Hard to decide
+            TODO Also needs to decide how to pass in other agents' current rewards and neighboring info
+        '''
+        n_agents = len(self.world.agents_map)
+        contract = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer x apples to the other agents, which is equally distributed to the other agents."
         prompt_input = """
-You are a player of {n_agents} players in a 2D grid-based world. You are perfectly rational and you want to maximize the number of apples you have.
+You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. 
+
+Currently, you are at grid [{x},{y}]. The player closet to you is at grid [{nearest_agent_coord}]. The nearest apple is at grid [{nearest_apple}]. There are 6 neighboring apples within a radius of 5 grids around you. In total, there are {remaining_apples} apples. In the last round, you collected {just_collected_apples} apples, Bob collected 0 apples.
+
+Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please reply in the following format and decide the variable X:
+```json
+{{
+    “propose_contract”: “YES”,
+    “X”: “TODO”,
+    "reasoning": "TODO",
+}}
+
+If you don't want to propose such a contract, please reply in the following format:
+```json
+{{
+    “propose_contract”: “NO”,
+    "reasoning": "TODO",
+}}
+
+Please reason step by step.
+```
+        """.format(n_agents=n_agents, contract=contract, x=self.x, y=self.y, just_collected_apples=self.just_collected_apple)
+        
+        self.message_history.append(HumanMessage(content=prompt_input))
+        # TODO pass to API call and get returned result - Q: whether we want to leave this in message_history? Is this memory?
+        # Assume getting returned parameter
+
+        return contract_proposed, contract_parameter
+
+    
+    def vote_on_contract(self, contract, contract_parameter, n_agents):
+        # Logic for the agent to decide on voting for a contract
+        proposed_contract = contract.replace("X", contract_parameter)
+        input_prompt = """
+You are a player in a 2D grid-based world who can move around to collect apples. There are {n_player} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. 
+
+Currently, you are at grid [{x},{y}].  [{nearest_agent_coord}]. The nearest apple is at grid [{nearest_apple}]. There are 6 neighboring apples within a radius of 5 grids around you. In total, there are {remaining_apples} apples. In the last round, you collected {just_collected_apples} apples, Alice collected 0 apples.
+
+Now, Alice proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format:
+```json
+{{
+    “agree_contract”: “True”,
+    "reasoning": "TODO",
+}}
+
+If you don't agree to this contract, please reply in the following format:
+```json
+{{
+    “agree_contract”: “False”,
+    "reasoning": "TODO",
+}}
+
+Please reason step by step.
+        """.format(n_agents=n_agents, contract=proposed_contract, x=self.x, y=self.y, just_collected_apples=self.just_collected_apple)
+        # TODO pass to API call and get returned result
+        return voting_result
+
+    def action_prompt(self, world, contract):
+        current_game_state = self.get_input_prompt
+        n_agents = len(self.world.agents_map)
+        contract_response = ["yes", "This contract will be enforced after every agent takes their actions in this round."] if world.contract_active else ["no", "This contract will not be enforced."]
+        proposed_contract = contract.replace("X", contract_parameter)
+        prompt_input = """
+The contract "{contract}" is voted {contract_response[0]}. {contract_response[1]}
+
+Currently, you are at grid {x}, {y}. The player closet to you is at grid [{nearest_agent_coord}]. The nearest apple is at grid [{nearest_apple}]. In total, there are {remaining_apples} apples. In the last round, you collected {just_collected_apples} apples, Bob collected 0 apples.
 
 You can choose one of the following actions:
-- GO [up/down/left/right/target]: you will move in the following direction for 1 grid.
+- GO [up/down/left/right]: you will move in the following direction for 1 grid.
 - STAY: soldier will not move and stay at the original location.
 - Collect: Collect the apple in the current grid.
 
@@ -159,27 +162,14 @@ For example:
 "STAY": you will just stay at the same location doing nothing.
 "COLLECT": you will collect the apple in the current grid.
 
-This is the current game state:
-
-{current_game_state}
-
----
-
-You have the option of proposing a contract to the other players to prevent overconsume apples. If the contract is agreed by the majority, it will be enforced. If you want to propose such a contract, please follow the format {contract} and decide the variable X. If you don't want to propose such a contract, simply 
-
----
-
-In the reply, please reason step by step. You should give your order in the following format as shown in the order section of the previous json. Please update order that you think is wrong with reasoning.
-All your output should be aggregated into a json file with the following format:
+Please reason step by step and give a reply in the following format:
 ```json
 {{
-    "general thoughts": "TODO",
+    “action”: “TODO”,
     "reasoning": "TODO",
-    "contract": "TODO",
-    "order": "TODO"
 }}
 ```
-        """.format(n_agents=n_agents, current_game_state=current_game_state, contract=self.contract)
+        """.format(contract=proposed_contract, x=self.x, y=self.y, just_collected_apples=self.just_collected_apple)
         
         self.message_history.append(HumanMessage(content=prompt_input))
         
@@ -191,7 +181,7 @@ All your output should be aggregated into a json file with the following format:
         This function takes in the input_prompt and returns a dictionary of order.
         """
 
-        expect_soldier_number = self.get_input_prompt()
+        expect_agent_number = self.action_prompt()
         if verbose_input:
             print(f"input_prompt: {self.message_history}")
         _output = self.chat_model(self.message_history)
@@ -202,18 +192,15 @@ All your output should be aggregated into a json file with the following format:
             self.message_history.append(AIMessage(content=json_string))
             error_execution_message = self.get_error_execution_message(output)
             if error_execution_message != "":
-                raise CommanderError(error_execution_message)
-            if expect_soldier_number != len(list(output.keys())) - 1:
-                raise CommanderError(
-                    f"You are missing some soldiers in your output. Please make sure you have orders for all {expect_soldier_number} soldiers.")
+                raise AgentError(error_execution_message)
         except Exception as e:
-            if e.__class__.__name__ == "CommanderError":
+            if e.__class__.__name__ == "AgentError":
                 print(e)
             else:
                 print(f"output is not in json format: {json_string}")
 
             if self.remaining_retry_times > 0:
-                if e.__class__.__name__ == "CommanderError":
+                if e.__class__.__name__ == "AgentError":
                     error_message = HumanMessage(
                         content=e.__str__())
                 else:
@@ -224,7 +211,7 @@ All your output should be aggregated into a json file with the following format:
 
                 return self.get_orders()
             else:
-                raise CommanderError(
+                raise AgentError(
                     "You have exceeded the maximum number of retries. Please try again later.")
 
         if verbose_output:
@@ -233,7 +220,46 @@ All your output should be aggregated into a json file with the following format:
         return output
 
     def get_info(self):
-        return {"id": self.id, "name": self.name, "object_type": self.object_type}
+        return {"id": self.id, "name": self.name, "x": self.x, "y": self.y, "rewards": self.rewards}
+
+    def _collect_apple(self, x, y):
+        """
+        Logic for the agent to collect an apple at position (x, y).
+        """
+        if self.world.is_apple_at(x, y): #TODO
+            self.world.remove_apple(x, y) #TODO
+            self.rewards += 1
+            self.just_collected_apple += 1
+
+        # TODO decide more collecting details - say if we are surrounded by more than one apple, how we decide which one? or how many?
+            
+    def _move(self, dir):
+        # TODO: optimize this part
+        self.world.map[self.y][self.x].remove(self.id)
+        self.x += self.directions[dir][0]
+        self.y += self.directions[dir][1]
+        self.world.map[self.y][self.x].append(self.id)
+
+    def _stay(self):
+        # print("stay")
+        pass
+
+    def execute(self):
+        action, error_message = self.take_action()
+        if error_message is not None:
+            #TODO: return error message not raise
+            # raise world.WorldError(error_message)
+            # TODO: give this to commander
+            return
+        self.just_collected_apple = 0
+        if "MOVE" in action:
+            _, dir = action.split(" ")
+            self._move(dir)
+        elif "COLLECT" in action:
+            _, target_id = action.split(" ")
+            self._collect_apple(int(target_id))
+        elif "STAY" in action:
+            self._stay()
 
     def get_error_execution_message(self, output):
         error_message = []
@@ -251,11 +277,7 @@ All your output should be aggregated into a json file with the following format:
                     x = instance.x + instance.directions[dir.upper()][0]
                     y = instance.y + instance.directions[dir.upper()][1]
                     if x < 0 or x >= self.world.x_size or y < 0 or y >= self.world.y_size:
-                        error_message.append(f"Your soldier {instance.name} is trying to move out of the map, which is not allowed. ")
-                if target.startswith("enemy") or target.startswith("soldier"):
-                    target_name = target.split("_", 1)[1]
-                    if target_name.lower() not in self.world.name_to_id:
-                        error_message.append(f"Your soldier {instance.name} is trying to move to a non-existing target, which is not allowed.")
+                        error_message.append(f"Your agent is trying to move out of the map, which is not allowed. ")
         
         error_message.append(HumanMessage(content="Generate new reply based on information above."))
         

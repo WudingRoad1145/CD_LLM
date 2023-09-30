@@ -13,3 +13,15 @@ To set up API keys for this project, follow these steps:
        "anthropic_api_key_1": "YOUR_KEY"
    }
 2. If it's not set, we will get OPENAI_API_KEY and ANTHROPIC_API_KEY environment variables from your system.
+
+
+## Experiments progress
+- [ ] Static games
+  - [ ] Simple Prisoner's Dilemma
+    - [ ] Done with zero-shot prompting
+  - [ ] Public good
+    - [ ] Done with one-shot prompting
+- [ ] Dynamic games
+  - [ ] Harvest
+    - [ ] game infra setting up
+    - [ ] prompting tests finished
