@@ -1,0 +1,39 @@
+Randomly selected Alice to propose contract
+
+You are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. 
+
+Currently, you are at grid (3,3). The player closet to you is at grid (6, 4). The nearest apple is at grid (4, 2). There are 3 neighboring apples within a radius of 3 grids around you. In total, there are 20 apples. In the last round, you collected 0 apples, In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples..
+
+Here is the world state in your scope:
+. | . | . | . | . | . | . | Apple | . | . | . | . | . | . | .
+. | . | . | . | . | . | . | . | . | . | . | Apple | . | . | .
+. | . | . | . | Apple | . | . | . | . | . | . | . | Apple | . | .
+. | . | . | Alice | . | . | . | . | . | . | . | . | . | . | .
+. | . | . | . | . | . | Cao | . | . | . | . | Apple | . | . | .
+. | Apple | . | . | . | . | . | . | Bob | . | Apple | . | . | . | .
+. | . | . | . | . | Apple | . | . | . | . | . | . | . | . | .
+Apple | . | . | . | . | . | Apple | . | . | . | . | . | . | . | .
+. | . | . | . | . | . | . | . | . | Apple | . | . | . | . | Apple
+. | . | . | . | . | . | . | . | . | . | . | . | . | . | .
+. | Apple | . | . | . | . | . | . | . | . | . | . | . | . | .
+. | . | . | . | . | . | . | . | Apple | Apple | . | . | . | . | .
+. | . | Apple | . | . | Apple | . | . | . | . | . | . | . | . | Apple
+. | Apple | . | . | Apple | . | . | . | . | . | . | . | . | . | .
+. | . | . | . | . | . | . | . | . | . | . | . | . | . | .
+
+Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer x apples to the other agents, which is equally distributed to the other agents. If you want to propose such a contract, please reply in the following format and decide the variable X:
+```json
+{
+    “propose_contract”: “YES”,
+    “X”: “TODO”,
+    "reasoning": "TODO",
+}
+
+If you don't want to propose such a contract, please reply in the following format:
+```json
+{
+    “propose_contract”: “NO”,
+    "reasoning": "TODO",
+}
+
+Please reason step by step.

@@ -1,3 +1,6 @@
+import sys
+import os
+import datetime
 from pprint import pprint, pformat
 import pandas as pd
 from collections import OrderedDict
@@ -30,12 +33,7 @@ class World:
     def is_occupied(self, x, y):
         if x < 0 or x >= self.x_size or y < 0 or y >= self.y_size:
             return True
-        
-        id_list = self.map[y][x]
-        for id in id_list:
-            if self.instances[id] != []: # might wrong
-                return True
-        return False
+        return any(isinstance(inst, Agent) for inst in self.map[y][x])
 
     def exists(self, id):
         """
@@ -64,11 +62,11 @@ class World:
         world_state = [
             [" & ".join(i) if i != [] else "." for i in j] for j in world_state
         ]
-        
-        instance_details = []
+        agent_details = []
         for instance in self.instances.values():
-            instance_details.append(instance.get_info())
-        return world_state, instance_details
+            if(instance.name != "Apple"):
+                agent_details.append(instance.get_info())
+        return world_state, agent_details
 
     def add_instance(self, instance):
         id = self.global_id
@@ -77,6 +75,7 @@ class World:
 
         id = self.global_id
         self.instances[id] = instance
+        self.map[instance.y][instance.x].append(instance)
         self.global_id += 1
         return id
 
@@ -91,7 +90,17 @@ class World:
                     if np.random.random() < spawn_prob:
                         self.add_instance(Apple(row, col))
 
-    def count_nearby_apples(self, x, y, radius=5):
+    def remove_apple(self, x, y):
+        for i, id in enumerate(self.map[y][x]): # maybe 2 apples in 1 cell
+            if isinstance(self.instances[id], Apple):
+                del self.instances[id]
+                del self.map[y][x][i]
+                return
+    
+    def is_apple_at(self, x, y):
+        return any(isinstance(inst, Apple) for inst in self.map[y][x])
+
+    def count_nearby_apples(self, x, y, radius=3):
         count = 0
         for i in range(-radius, radius+1):
             for j in range(-radius, radius+1):
@@ -99,13 +108,13 @@ class World:
                     if any(isinstance(inst, Apple) for inst in self.map[y+j][x+i]):
                         count += 1
         return count
-
+    
     def enforce_contract(self, contract_param):
-        x = contract_param['x']  # The number of apples to be transferred
+        x = int(contract_param)  # The number of apples to be transferred
         
         # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
-            if agent.just_collected_apple:  # Assuming there's a flag in the agent class to track this
+            if agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y)
                 
                 # If the agent collected an apple in a low-density region
@@ -120,44 +129,44 @@ class World:
                         if other_agent_id != agent_id:
                             other_agent.rewards += apples_per_agent
 
-    def agent_update_order(self, agent, order):
-        #TODO
-        pass
 
     def __repr__(self):
         w, infos = self.get_world_state()
         print(pd.DataFrame.from_records(infos).sort_values("name").drop(
-            ["id", 'x', 'y'], axis=1))
+            ["id"], axis=1))
         w = pd.DataFrame(w)
         idx_list = list(range(self.y_size))
         w.index = list(map(lambda s: "|" + str(s) + "|", idx_list))
         w = w.rename(columns=lambda s: "|" + str(s) + "|")
         return pformat(w, indent=4)
 
-    def run(self, n_rounds):
+    def run(self, n_rounds, contract_template):
         """
         Run the world for n_rounds
         """
         for _ in range(n_rounds):
-            self._round()
+            self._round(contract_template)
 
-    def _round(self):
+    def _round(self, contract_template):
         # 1. Randomly pick one agent to propose a contract
         proposing_agent = np.random.choice(list(self.agents_map.values()))
-        print("Randomly selected ", proposing_agent, " to propose contract")
-        contract_proposed, contract_param = proposing_agent.propose_contract()
+        print("Randomly selected", proposing_agent.name, "to propose contract")
+        contract_proposed, contract_param = proposing_agent.propose_contract(contract_template)
         
         # 2. If a contract is proposed, prompt all players for voting
         if contract_proposed:
-            votes = [agent.vote_on_contract(contract_param) for agent in self.agents_map.values()]
+            # Exclude the proposing agent from the voting process
+            votes = [agent.vote_on_contract(proposing_agent.name, contract_template, contract_param) 
+                for agent in self.agents_map.values() if agent.name != proposing_agent.name]
+            print(votes)
             if all(votes):
                 # If all agents agree, activate the punishment function
                 self.contract_active = True
         
         # 3. Prompt all agents to make actions then execute       
         for agent in self.agents_map.values():
-            agent.get_orders()
-            agent.execute()
+            action = agent.action_prompt(contract_template, contract_param)
+            agent.execute(action)
 
         # 4. Enforce CD
         self.enforce_contract(contract_param)
@@ -168,7 +177,11 @@ class World:
 
 
 if __name__ == "__main__":
-    world = World(15, 15)
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
+    sys.stdout = open(filename, 'w')
+
+    world = World(15, 15, 20) # 15x15 world with 20 apples
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to maximize the number of apples you collect.",
@@ -181,15 +194,26 @@ if __name__ == "__main__":
                                  x = 8,
                                  y = 5,
                                  chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
+    agent_3 = Agent(world, name="Cao",
+                                 strategy="You want to maximize the number of apples you collect.",
+                                 x = 6,
+                                 y = 4,
+                                 chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
 
     world.agents_map[agent_1.name] = agent_1
     world.agents_map[agent_2.name] = agent_2
+    world.agents_map[agent_3.name] = agent_3
 
-    for i in range(5):
+    contract_template = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents."
+
+    for i in range(30):
         print('=========== round {round} =========='.format(round=i))
         print(world)
-        
-        world.run(n_rounds=1)
+        print("**************************************************************************")
+
+        world.run(n_rounds=1,contract_template=contract_template)
         print(world)
         print('=========== round {round} =========='.format(round=i))
         print("\n\n\n\n\n\n\n")
+    
+    sys.stdout.close()
