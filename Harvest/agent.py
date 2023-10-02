@@ -69,7 +69,6 @@ class Agent:
         self.message_history = []
         self.remaining_retry_times = self.max_retry_times
 
-
     def nearest_apple(self, agent_x, agent_y, world_state):
         # If there's an apple on the agent's current position, return it as the nearest
         if 'Apple' in world_state[agent_y][agent_x]:
@@ -114,6 +113,8 @@ class Agent:
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
+        memory_sentence = ", ".join([f"In round {i}, contract proposed was {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+
         input_prompt = """
 You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
 
@@ -121,6 +122,8 @@ Currently, you are at grid ({x},{y}). The player closet to you is at grid {neare
 
 Here is the world state in your scope:\n
 {world_state}
+
+{CD_memory}
 
 Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please reply in the following format and decide the variable X:
 ```json
@@ -153,6 +156,7 @@ Please reason step by step.
         remaining_apples=remaining_apples,
         neighbor_apple=neighbor_apple,
         collected_apples_sentence=collected_apples_sentence,
+        CD_memory=memory_sentence,
     )
         #print(prompt_input)
         self.message_history.append(HumanMessage(content=input_prompt))
@@ -197,6 +201,8 @@ Please reason step by step.
 
         final_contract = contract.replace("X", contract_parameter)
 
+        memory_sentence = ", ".join([f"In round {i}, contract proposed was {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+
         input_prompt = """
 You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
 
@@ -204,6 +210,8 @@ Currently, you are at grid ({x},{y}). The player closet to you is at grid {neare
 
 Here is the world state in your scope:\n
 {world_state}
+
+{CD_memory}
 
 Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format:
 ```json
@@ -234,6 +242,7 @@ Please reason step by step.
         collected_apples_sentence=collected_apples_sentence,
         contract=final_contract,
         proposer=proposer_name,
+        CD_memory=memory_sentence,
     )
         self.message_history.append(HumanMessage(content=input_prompt))
         output = self.call_LLM()
@@ -422,4 +431,3 @@ Please reason step by step and give a reply in the following format:
             self._collect_apple(self.x, self.y)
         elif "STAY" in action:
             self._stay()
-            

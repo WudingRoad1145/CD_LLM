@@ -24,6 +24,7 @@ class World:
         self.name_to_id = {}
         self.global_id = 0
         self.contract_active = False
+        self.CD_memory = []
         # Randomly distribute apples
         for _ in range(num_apples):
             x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
@@ -110,6 +111,14 @@ class World:
                         count += 1
         return count
     
+    def record_CD(self, contract_proposed, voting_results, agent_rewards, contract_enforced):
+        # Record historical data in memory
+        self.CD_memory.append({
+            'contract_proposed': contract_proposed,
+            'voting_results': voting_results,
+            'agent_rewards': agent_rewards,
+            'contract_enforced': contract_enforced
+        })
     
     def enforce_contract(self, contract_param):
         x = int(contract_param)  # The number of apples to be transferred
@@ -160,10 +169,10 @@ class World:
         # 2. If a contract is proposed, prompt all players for voting
         if contract_proposed:
             # Exclude the proposing agent from the voting process
-            votes = [agent.vote_on_contract(proposing_agent.name, contract_template, contract_param) 
-                for agent in self.agents_map.values() if agent.name != proposing_agent.name]
+            votes = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param))
+                    for agent in self.agents_map.values() if agent.name != proposing_agent.name]
             print(votes)
-            if all(votes):
+            if all(vote for _, vote in votes): 
                 # If all agents agree, activate the punishment function
                 self.contract_active = True
         
@@ -176,7 +185,11 @@ class World:
         self.enforce_contract(contract_param)
         self.contract_active = False # Reset the contract flag
 
-        # 5. Spawn new apples
+        # 5. Record CD history
+        final_contract = contract_template.replace("X", contract_param)
+        self.record_CD(final_contract, votes, {agent.name: agent.rewards for agent in self.agents_map.values()}, self.contract_active)
+
+        # 6. Spawn new apples
         self.spawn_apples()
 
 
@@ -185,23 +198,23 @@ if __name__ == "__main__":
     filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
     sys.stdout = open(filename, 'w')
 
-    world = World(15, 15, 12) # 15x15 world with 20 apples
+    world = World(20, 20, 30) # 15x15 world with 20 apples
     
     agent_1 = Agent(world, name="Alice",
-                                 strategy="You want to maximize the number of apples you collect.",
+                                 strategy="You want to collect as many apples as possible. You want to help others collect more apples as well so that the society gets better off.",
                                  x = 3,
                                  y = 3,
                                  chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
 
     agent_2 = Agent(world, name="Bob",
-                                 strategy="You want to maximize the number of apples you collect.",
-                                 x = 8,
-                                 y = 5,
+                                 strategy="You want to maximize the number of apples you collect. You don't want to overconsume apples because you want to sustainably harvest apples.",
+                                 x = 12,
+                                 y = 16,
                                  chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
     agent_3 = Agent(world, name="Cao",
-                                 strategy="You want to maximize the number of apples you collect.",
-                                 x = 6,
-                                 y = 4,
+                                 strategy="You want to maximize the number of apples you collect. You would love collaborate with others to collect more apples in multiple rounds, not just in one round.",
+                                 x = 9,
+                                 y = 7,
                                  chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
 
     world.agents_map[agent_1.name] = agent_1
@@ -210,7 +223,7 @@ if __name__ == "__main__":
 
     contract_template = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents."
 
-    for i in range(10):
+    for i in range(30):
         print('=========== round {round} =========='.format(round=i))
         print(world)
         print("**************************************************************************")
