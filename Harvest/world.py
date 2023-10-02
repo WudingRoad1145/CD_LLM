@@ -1,6 +1,6 @@
 import sys
-import os
 import datetime
+from os.path import join
 from pprint import pprint, pformat
 import pandas as pd
 from collections import OrderedDict
@@ -11,7 +11,8 @@ class WorldError(Exception):
     """
     Exception raised for errors in the world. To indicate that the world is in an invalid state.
     """
-    pass
+    def __init__(self, message="An error occurred in the World."):
+        super().__init__(message)
 
 class World:
     def __init__(self, x_size, y_size, num_apples=20):
@@ -62,15 +63,12 @@ class World:
         world_state = [
             [" & ".join(i) if i != [] else "." for i in j] for j in world_state
         ]
-        agent_details = []
-        for instance in self.instances.values():
-            if(instance.name != "Apple"):
-                agent_details.append(instance.get_info())
+        agent_details = [instance.get_info() for instance in self.instances.values() if instance.name != "Apple"]
         return world_state, agent_details
 
     def add_instance(self, instance):
         id = self.global_id
-        if self.is_occupied(instance.x, instance.y):
+        if instance.name != "Apple" and self.is_occupied(instance.x, instance.y):
             raise WorldError("Cannot add instance: the location is occupied")
 
         id = self.global_id
@@ -79,23 +77,26 @@ class World:
         self.global_id += 1
         return id
 
+    def spawn_probability(self, nearby_apples):
+        return [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
+
     def spawn_apples(self):
         for row in range(self.x_size):
             for col in range(self.y_size):
-                if not any(isinstance(inst, Apple) for inst in self.map[col][row]):
-                    nearby_apples = self.count_nearby_apples(row, col)
-                    if nearby_apples == 0:
-                        continue
-                    spawn_prob = [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
+                if not self.is_apple_at(row, col):
+                    spawn_prob = self.spawn_probability(self.count_nearby_apples(row, col))
                     if np.random.random() < spawn_prob:
                         self.add_instance(Apple(row, col))
 
     def remove_apple(self, x, y):
-        for i, id in enumerate(self.map[y][x]): # maybe 2 apples in 1 cell
-            if isinstance(self.instances[id], Apple):
-                del self.instances[id]
-                del self.map[y][x][i]
-                return
+        for i, apple in enumerate(self.map[y][x]):  # maybe 2 apples in 1 cell
+            if isinstance(apple, Apple):
+                # Find the id of the apple in self.instances
+                id = next((id for id, instance in self.instances.items() if instance is apple), None)
+                if id is not None:
+                    del self.instances[id]
+                    del self.map[y][x][i]
+                    return
     
     def is_apple_at(self, x, y):
         return any(isinstance(inst, Apple) for inst in self.map[y][x])
@@ -109,6 +110,7 @@ class World:
                         count += 1
         return count
     
+    
     def enforce_contract(self, contract_param):
         x = int(contract_param)  # The number of apples to be transferred
         
@@ -116,11 +118,13 @@ class World:
         for agent_id, agent in self.agents_map.items():
             if agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y)
+                print("enforcing contract on agent", agent.name)
                 
                 # If the agent collected an apple in a low-density region
                 if nearby_apples < 4:
                     # Take x apples from the violating agent
                     agent.rewards = max(0, agent.rewards - x)
+                    print(agent.name, "'s reward minus", x)
                     
                     # Distribute the apples equally among the other agents
                     num_other_agents = len(self.agents_map) - 1
@@ -165,7 +169,7 @@ class World:
         
         # 3. Prompt all agents to make actions then execute       
         for agent in self.agents_map.values():
-            action = agent.action_prompt(contract_template, contract_param)
+            action = agent.get_action(contract_template, contract_param)
             agent.execute(action)
 
         # 4. Enforce CD
@@ -181,7 +185,7 @@ if __name__ == "__main__":
     filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
     sys.stdout = open(filename, 'w')
 
-    world = World(15, 15, 20) # 15x15 world with 20 apples
+    world = World(15, 15, 12) # 15x15 world with 20 apples
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to maximize the number of apples you collect.",
@@ -206,7 +210,7 @@ if __name__ == "__main__":
 
     contract_template = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents."
 
-    for i in range(30):
+    for i in range(10):
         print('=========== round {round} =========='.format(round=i))
         print(world)
         print("**************************************************************************")

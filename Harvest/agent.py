@@ -12,57 +12,54 @@ class AgentError(Exception):
     """
     Exception raised for errors in agent prompting. To feed back into the chatbot.
     """
+    def __init__(self, message="An error occurred in the Agent."):
+        super().__init__(message)
 
-    pass
-
-
-class Agent():
-    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0, scope: int = 5, chat_model: str = 'gpt-4',
-                 max_retry_times: int = 5, custom_key: str = None, custom_key_path: str = 'api_key/llm_api_keys.json'):
-        """
-        This function initializes the LLM agent.
-        Options for chat_model keyword:[gpt-3.5-turbo, gpt-4, gpt-4-0613, gpt-3.5-turbo-16k, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613, text-davinci-003, gpt-4-32k, gpt-4-32k-0613]
-        """
+class Agent:
+    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0,
+                 chat_model: str = 'gpt-4', max_retry_times: int = 5,
+                 custom_key: str = None, custom_key_path: str = 'api_key/llm_api_keys.json'):
         self.name = name
-        self.strategy = strategy # high level strategy for the player. e.g. you want to maximize your own benefits but not harm others
+        self.strategy = strategy
         self.x = x
         self.y = y
         self.world = world
-        self.rewards = 0 # initialize num apples collected
+        self.rewards = 0
         self.directions = {
             "UP": [0, -1],
             "DOWN": [0, 1],
             "LEFT": [-1, 0],
             "RIGHT": [1, 0]
-        } 
-        # get json API key from api_key/llm_api_key.json
-        if custom_key:
-            with open(custom_key_path, 'r') as file:
-                api_keys = json.load(file)
+        }
+        custom_key_path = os.path.join('api_key', 'llm_api_keys.json')
+        api_keys = self._get_api_keys(custom_key, custom_key_path)
+        self.chat_model = self._init_chat_model(chat_model, api_keys, custom_key)
+        self.message_history = []
+        self.max_retry_times = max_retry_times
+        self.remaining_retry_times = max_retry_times
+        self.just_collected_apple = 0
+        self.id = world.add_instance(self)
 
+    def _get_api_keys(self, custom_key, custom_key_path):
+            if custom_key:
+                with open(custom_key_path, 'r') as file:
+                    return json.load(file)
+            return None
+
+    def _init_chat_model(self, chat_model, api_keys, custom_key):
+        print(f"Loading {chat_model.split('-')[0].upper()} chat model...")
         if 'gpt' in chat_model:
-            print("Loading GPT chat model...")  # log in the future
-            self.chat_model = ChatOpenAI(
+            return ChatOpenAI(
                 model_name=chat_model,
-                openai_api_key= api_keys[custom_key] if custom_key else os.environ.get("OPENAI_API_KEY"),
+                openai_api_key=api_keys[custom_key] if custom_key else os.environ.get("OPENAI_API_KEY"),
                 temperature=0, max_tokens=1500, request_timeout=120, verbose=True)
         elif "claude" in chat_model:
-            print("Loading Claude chat model...")  # log in the future
-            self.chat_model = ChatAnthropic(
+            return ChatAnthropic(
                 model=chat_model,
                 anthropic_api_key=api_keys[custom_key] if custom_key else os.environ.get("ANTHROPIC_API_KEY"),
                 temperature=0, verbose=True)
         else:
-            raise NotImplementedError(
-                f"Chat model {chat_model} not implemented.")
-
-        self.message_history = []
-        self.max_retry_times = max_retry_times
-        self.remaining_retry_times = max_retry_times
-        self.scope = scope
-        self.just_collected_apple = 0
-
-        self.id = world.add_instance(self)
+            raise NotImplementedError(f"Chat model {chat_model} not implemented.")
 
     def get_info(self):
         return {"id": self.id, "name": self.name, "x_coord": self.x, "y_coord": self.y, "total_rewards": self.rewards, "just_collected_apple": self.just_collected_apple}
@@ -74,10 +71,20 @@ class Agent():
 
 
     def nearest_apple(self, agent_x, agent_y, world_state):
-        apple_distances = [(i, j, distance(agent_x, agent_y, j, i)) for i, row in enumerate(world_state) for j, cell in enumerate(row) if cell == 'Apple']
+        # If there's an apple on the agent's current position, return it as the nearest
+        if 'Apple' in world_state[agent_y][agent_x]:
+            return (agent_x, agent_y)
+        
+        apple_distances = [(i, j, distance(agent_x, agent_y, j, i)) for i, row in enumerate(world_state) for j, cell in enumerate(row) if 'Apple' in cell]
         nearest_apple_y, nearest_apple_x, _ = min(apple_distances, key=lambda x: x[2])
         return (nearest_apple_x, nearest_apple_y)
 
+    def count_remaining_apple(self, world_state):
+        apple_count = 0
+        for row in world_state:
+            for cell in row:
+                apple_count += cell.strip().split(' & ').count('Apple')
+        return apple_count
 
     def propose_contract(self, contract, scope=3):
         ''' 
@@ -102,13 +109,13 @@ class Agent():
         nearest_apple_coord = self.nearest_apple(self.x, self.y, world_state)
 
         # Calculate the number of remaining apples
-        remaining_apples = sum([row.count('Apple') for row in world_state])
+        remaining_apples = self.count_remaining_apple(world_state)
 
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
         input_prompt = """
-You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. 
+You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
 
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
@@ -118,7 +125,7 @@ Here is the world state in your scope:\n
 Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please reply in the following format and decide the variable X:
 ```json
 {{
-    “propose_contract”: “YES”,
+    “propose_contract”: “TRUE”,
     “X”: “TODO”,
     "reasoning": "TODO",
 }}
@@ -126,13 +133,14 @@ Now, you have the option of proposing a contract to the other players to prevent
 If you don't want to propose such a contract, please reply in the following format:
 ```json
 {{
-    “propose_contract”: “NO”,
+    “propose_contract”: “FALSE”,
     "reasoning": "TODO",
 }}
 
 Please reason step by step.
 ```
         """.format(
+        strategy=self.strategy,
         n_agents=len(agent_details),
         contract=contract,
         x=self.x,
@@ -148,8 +156,8 @@ Please reason step by step.
     )
         #print(prompt_input)
         self.message_history.append(HumanMessage(content=input_prompt))
-        output = self.get_orders()
-        if output['propose_contract'] == 'YES':
+        output = self.call_LLM()
+        if output['propose_contract'] == 'TRUE':
             contract_proposed = True
             contract_parameter = output['X']
         else:
@@ -182,29 +190,32 @@ Please reason step by step.
         nearest_apple_coord = self.nearest_apple(self.x, self.y, world_state)
 
         # Calculate the number of remaining apples
-        remaining_apples = sum([row.count('Apple') for row in world_state])
+        remaining_apples = self.count_remaining_apple(world_state)
 
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
-        proposed_contract = contract.replace("X", contract_parameter)
+        final_contract = contract.replace("X", contract_parameter)
 
         input_prompt = """
-You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. 
+You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
 
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+
+Here is the world state in your scope:\n
+{world_state}
 
 Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format:
 ```json
 {{
-    “agree_contract”: “True”,
+    “agree_contract”: “TRUE”,
     "reasoning": "TODO",
 }}
 
 If you don't agree to this contract, please reply in the following format:
 ```json
 {{
-    “agree_contract”: “False”,
+    “agree_contract”: “FALSE”,
     "reasoning": "TODO",
 }}
 
@@ -221,21 +232,21 @@ Please reason step by step.
         remaining_apples=remaining_apples,
         neighbor_apple=neighbor_apple,
         collected_apples_sentence=collected_apples_sentence,
-        contract=proposed_contract,
+        contract=final_contract,
         proposer=proposer_name,
     )
         self.message_history.append(HumanMessage(content=input_prompt))
-        output = self.get_orders()
-        if output['agree_contract'] == 'YES':
+        output = self.call_LLM()
+        if output['agree_contract'] == 'TRUE':
             voting_result = True
         else:
             voting_result = False
-        print(self.name, voting_result)
+        #print(self.name, voting_result)
 
         return voting_result
     
 
-    def action_prompt(self, contract, contract_parameter, scope=3):
+    def get_action(self, contract, contract_parameter, scope=3):
         '''
             Logic for the agent to decide her action
 
@@ -258,16 +269,15 @@ Please reason step by step.
         nearest_apple_coord = self.nearest_apple(self.x, self.y, world_state)
 
         # Calculate the number of remaining apples
-        remaining_apples = sum([row.count('Apple') for row in world_state])
+        remaining_apples = self.count_remaining_apple(world_state)
 
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope) 
-        contract_response = ["yes", "This contract will be enforced after every agent takes their actions in this round."] if self.world.contract_active else ["no", "This contract will not be enforced."]
-        proposed_contract = contract.replace("X", contract_parameter)
+        final_contract = contract.replace("X", contract_parameter)
+        contract_response = "The contract {contract} is voted yes. This contract will be enforced after every agent takes their actions in this round.".format(contract=final_contract) if self.world.contract_active else ["No contract is enforced this round."]
+        
         input_prompt = """
-The contract "{contract}" is voted {contract_response[0]}. {contract_response[1]}
-
-Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+{contract_response} Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 You can choose one of the following actions:
 - GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.
@@ -292,25 +302,35 @@ Please reason step by step and give a reply in the following format:
             x=self.x,
             y=self.y,
             just_collected_apples=self.just_collected_apple,
-            world_state="\n".join([" | ".join(row) for row in world_state]),
             nearest_agent_coord=nearest_agent_coord,
             nearest_apple_coord=nearest_apple_coord,
             scope=scope,
             remaining_apples=remaining_apples,
             neighbor_apple=neighbor_apple,
             collected_apples_sentence=collected_apples_sentence,
-            contract=proposed_contract,
+            contract=final_contract,
         )
 
         self.message_history.append(HumanMessage(content=input_prompt))
-        output = self.get_orders()
+        print("========>>>>>>")
+        print(self.name, self.message_history)
+        output = self.call_LLM()
         action = output['action']
-        print(action)
+        print(self.name, action)
+        # TODO generalize reflection into a func
+        if(action == "COLLECT" and (not self.world.is_apple_at(self.x,self.y))):
+            error_prompt="There's no apple for you to collect in your corrent grid. The nearest apple is at {nearest_apple_coord}. Please reflect and make a correct decision.".format(nearest_apple_coord=nearest_apple_coord)
+            self.message_history.append(HumanMessage(content=error_prompt))
+            output = self.call_LLM()
+            action = output['action']
+            print(self.name, "reflected", action)
+        print("========>>>>>>")
+        self.reset()
 
         return action
 
 
-    def get_orders(self, verbose_input=True, verbose_output=True) -> dict:
+    def call_LLM(self, verbose_input=True, verbose_output=True) -> dict:
         """
         This function takes in the input_prompt and calls LLM.
 
@@ -343,14 +363,14 @@ Please reason step by step and give a reply in the following format:
                 self.message_history.append(error_message)
                 self.remaining_retry_times -= 1
 
-                return self.get_orders()
+                return self.call_LLM()
             else:
                 raise AgentError(
                     "You have exceeded the maximum number of retries. Please try again later.")
 
         if verbose_output:
             pprint(output)
-        self.reset()
+        #self.reset()
         return output
 
     def get_error_execution_message(self, output):
@@ -375,38 +395,22 @@ Please reason step by step and give a reply in the following format:
 
 
     def _collect_apple(self, x, y):
-        """
-        Logic for the agent to collect an apple at position (x, y).
-        """
         if self.world.is_apple_at(x, y):
             self.world.remove_apple(x, y)
             self.rewards += 1
             self.just_collected_apple += 1
-        # TODO decide more collecting details - say if we are surrounded by more than one apple, how we decide which one? or how many?
-            
 
     def _move(self, dir):
         new_x = self.x + self.directions[dir][0]
         new_y = self.y + self.directions[dir][1]
-
-        # Check if the new position is within the boundaries
         if 0 <= new_x < len(self.world.map[0]) and 0 <= new_y < len(self.world.map):
-            # Remove the agent from the current position
             self.world.map[self.y][self.x].remove(self)
-            
-            # Update the agent's position
-            self.x = new_x
-            self.y = new_y
-            
-            # Add the agent to the new position
+            self.x, self.y = new_x, new_y
             self.world.map[self.y][self.x].append(self)
         else:
-            # Handle out-of-bounds move (e.g., print a warning)
             print(f"Move out of bounds: {dir}")
 
-
     def _stay(self):
-        # print("stay")
         pass
 
     def execute(self, action):
@@ -419,7 +423,3 @@ Please reason step by step and give a reply in the following format:
         elif "STAY" in action:
             self._stay()
             
-
-if __name__ == "__main__":
-    pass
-

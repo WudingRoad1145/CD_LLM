@@ -1,0 +1,26 @@
+Loading GPT chat model...
+Loading GPT chat model...
+Loading GPT chat model...
+=========== round 0 ==========
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        3        3              0                     0
+1    Bob        8        5              0                     0
+2    Cao        6        4              0                     0
+        |0|    |1| |2|    |3|    |4|    |5|    |6|    |7|  |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .      .   .      .      .      .      .      .    .      .      .      .      .  Apple      .
+|1|       .      .   .      .      .      .      .      .    .  Apple      .      .      .      .      .
+|2|   Apple      .   .      .  Apple  Apple      .      .    .      .      .      .      .      .  Apple
+|3|       .      .   .  Alice      .      .      .  Apple    .      .      .      .      .      .      .
+|4|       .      .   .      .      .      .    Cao      .    .      .      .  Apple      .      .      .
+|5|       .  Apple   .  Apple      .      .  Apple      .  Bob      .      .      .  Apple      .      .
+|6|       .      .   .      .      .  Apple      .      .    .      .      .      .      .      .      .
+|7|       .      .   .      .      .      .      .      .    .      .      .      .      .      .  Apple
+|8|       .  Apple   .      .      .      .      .      .    .      .  Apple      .      .      .      .
+|9|       .      .   .      .      .      .      .  Apple    .      .      .      .      .      .      .
+|10|      .      .   .      .      .      .  Apple      .    .      .      .      .      .      .      .
+|11|      .      .   .      .      .      .      .      .    .      .      .      .      .      .      .
+|12|      .      .   .      .      .      .  Apple      .    .      .      .      .      .      .      .
+|13|      .      .   .      .      .      .      .      .    .      .      .      .      .      .      .
+|14|  Apple      .   .      .      .      .      .      .    .      .      .      .      .      .      .
+**************************************************************************
+Randomly selected Bob to propose contract
