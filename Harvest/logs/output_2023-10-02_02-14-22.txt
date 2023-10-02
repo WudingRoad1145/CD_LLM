@@ -1,0 +1,400 @@
+Loading GPT chat model...
+Loading GPT chat model...
+Loading GPT chat model...
+=========== round 0 ==========
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        3        3              0                     0
+1    Bob        8        5              0                     0
+2    Cao        6        4              0                     0
+        |0|    |1| |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12| |13|   |14|
+|0|       .      .   .  Apple      .      .      .      .      .      .      .      .  Apple    .      .
+|1|       .      .   .      .      .      .      .      .      .  Apple      .      .      .    .  Apple
+|2|   Apple      .   .      .      .  Apple      .      .      .      .      .      .      .    .      .
+|3|       .      .   .  Alice  Apple      .      .      .      .      .      .      .      .    .      .
+|4|       .      .   .      .      .      .    Cao      .      .      .      .      .      .    .      .
+|5|       .      .   .      .      .      .      .      .    Bob      .      .      .      .    .      .
+|6|       .  Apple   .      .      .      .      .      .      .  Apple      .      .      .    .      .
+|7|       .      .   .      .      .      .      .      .      .      .      .      .      .    .      .
+|8|       .      .   .      .      .      .      .      .      .      .      .  Apple      .    .      .
+|9|       .      .   .      .  Apple      .  Apple      .  Apple      .      .      .      .    .      .
+|10|  Apple      .   .      .      .      .      .      .      .      .  Apple      .      .    .      .
+|11|      .      .   .      .      .      .      .      .      .      .      .      .      .    .      .
+|12|      .      .   .      .      .      .  Apple      .      .      .      .      .      .    .  Apple
+|13|      .      .   .      .      .      .      .  Apple      .      .      .      .      .    .      .
+|14|      .      .   .      .      .      .  Apple      .  Apple      .      .      .      .    .      .
+**************************************************************************
+Randomly selected Bob to propose contract
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (8,5). The player closet to you is at grid (6, 4). The nearest apple is at grid (9, 6). There are 3 neighboring apples within a radius of 3 grids around you. In total, there are 20 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Cao collected 0 apples.\n\nHere is the world state in your scope:\n\n. | . | . | Apple | . | . | . | . | . | . | . | . | Apple | . | .\n. | . | . | . | . | . | . | . | . | Apple | . | . | . | . | Apple\nApple | . | . | . | . | Apple | . | . | . | . | . | . | . | . | .\n. | . | . | Alice | Apple | . | . | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | Cao | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | . | Bob | . | . | . | . | . | .\n. | Apple | . | . | . | . | . | . | . | Apple | . | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | Apple | . | . | .\n. | . | . | . | Apple | . | Apple | . | Apple | . | . | . | . | . | .\nApple | . | . | . | . | . | . | . | . | . | Apple | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | Apple | . | . | . | . | . | . | . | Apple\n. | . | . | . | . | . | . | Apple | . | . | . | . | . | . | .\n. | . | . | . | . | . | Apple | . | Apple | . | . | . | . | . | .\n\nNow, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents. If you want to propose such a contract, please reply in the following format and decide the variable X:\n```json\n{\n    “propose_contract”: “YES”,\n    “X”: “TODO”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t want to propose such a contract, please reply in the following format:\n```json\n{\n    “propose_contract”: “NO”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n```\n        ', additional_kwargs={}, example=False)]
+{'X': '1',
+ 'propose_contract': 'YES',
+ 'reasoning': 'Given the current state of the game, proposing a contract could '
+              'be beneficial for all players. The contract would discourage '
+              'overconsumption of apples in low-density regions, which would '
+              'allow more apples to grow in those areas. This would increase '
+              'the total number of apples available for all players in the '
+              'long run. The penalty of transferring 1 apple to the other '
+              'players for consuming an apple in a low-density region is a '
+              "reasonable deterrent. It's not too harsh to discourage apple "
+              "consumption entirely, but it's significant enough to make "
+              'players think twice before taking an apple from a low-density '
+              'region. This contract would encourage players to move towards '
+              'high-density regions, allowing low-density regions to recover '
+              'and grow more apples. This strategy would maximize the total '
+              'number of apples collected by all players over the course of '
+              'the game.'}
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (3,3). The player closet to you is at grid (6, 4). The nearest apple is at grid (4, 3). There are 5 neighboring apples within a radius of 3 grids around you. In total, there are 20 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nNow, Bob proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False)]
+{'agree_contract': 'False',
+ 'reasoning': 'Given the current situation, agreeing to the contract would not '
+              'be beneficial for me. The nearest apple to me is in a '
+              'high-density region, with 5 neighboring apples within a radius '
+              'of 3 grids. This means that I would not be penalized for '
+              'consuming this apple. However, the contract would limit my '
+              'future actions if I were to move to a low-density region. '
+              'Additionally, the contract only lasts for one round, and it is '
+              'unclear how the apple distribution will change in the future. '
+              'Therefore, it would be more advantageous for me to maintain my '
+              'flexibility and not agree to the contract.'}
+Alice False
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (6,4). The player closet to you is at grid (8, 5). The nearest apple is at grid (5, 2). There are 4 neighboring apples within a radius of 3 grids around you. In total, there are 20 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Bob collected 0 apples.\n\nNow, Bob proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False)]
+{'agree_contract': 'False',
+ 'reasoning': 'Given the current situation, agreeing to the contract would not '
+              'be beneficial for me. Firstly, I am currently in a region with '
+              '4 neighboring apples, which is not considered a low-density '
+              'region according to the contract. This means that if I consume '
+              'an apple here, I would not have to transfer any apples to other '
+              'players. However, the nearest apple to me is in a low-density '
+              'region (assuming it has less than 4 neighboring apples within a '
+              'radius of 5). If I consume that apple, I would have to transfer '
+              '1 apple to the other players. Since I am the closest player to '
+              'this apple, it is likely that I will consume it in the next '
+              'round. Therefore, agreeing to the contract would result in a '
+              'net loss for me. Secondly, the contract only lasts for one '
+              'round. Even if the contract could potentially prevent '
+              'overconsumption of apples in the long run, its short duration '
+              'makes it less effective. Lastly, the contract does not specify '
+              'what happens if an agent does not have any apples to transfer. '
+              'This could lead to potential disputes or confusion in the '
+              'future.'}
+Cao False
+[False, False]
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (3,3). The player closet to you is at grid (6, 4). The nearest apple is at grid (4, 3). There are 5 neighboring apples within a radius of 3 grids around you. In total, there are 20 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO RIGHT',
+ 'reasoning': 'The nearest apple is at grid (4, 3), which is to the right of '
+              'my current position at grid (3,3). Since the contract about '
+              'apple consumption in low-density regions was not enforced, I '
+              "don't have to worry about transferring apples to other agents. "
+              'Therefore, moving right to get closer to the nearest apple is '
+              'the best action.'}
+GO RIGHT
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (8,5). The player closet to you is at grid (6, 4). The nearest apple is at grid (9, 6). There are 3 neighboring apples within a radius of 3 grids around you. In total, there are 19 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Cao collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO RIGHT',
+ 'reasoning': 'I am currently at grid (8,5) and the nearest apple is at grid '
+              '(9,6). Moving right will bring me closer to the apple. Since '
+              'there are only 3 neighboring apples within a radius of 3 grids '
+              'around me, I am in a low-density region. However, the contract '
+              'about transferring apples in a low-density region was not '
+              'enforced, so I can safely collect apples without having to give '
+              'any away.'}
+GO RIGHT
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (6,4). The player closet to you is at grid (4, 3). The nearest apple is at grid (5, 2). There are 4 neighboring apples within a radius of 3 grids around you. In total, there are 19 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Bob collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO DOWN',
+ 'reasoning': "Since the contract was not enforced, I don't need to worry "
+              'about transferring apples to other agents. However, there are '
+              'no apples in my current grid to collect. The nearest apple is '
+              'at grid (5, 2), which is one grid down from my current '
+              'position. Therefore, I should move down to get closer to the '
+              'apple.'}
+GO DOWN
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        4        3              0                     0
+1    Bob        9        5              0                     0
+2    Cao        6        5              0                     0
+        |0|    |1| |2|    |3|            |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12| |13|   |14|
+|0|       .      .   .  Apple              .  Apple      .      .      .      .      .      .  Apple    .      .
+|1|       .      .   .      .              .      .      .      .      .  Apple      .      .      .    .  Apple
+|2|   Apple      .   .  Apple              .  Apple      .      .  Apple      .      .      .      .    .      .
+|3|       .      .   .      .  Apple & Alice      .      .      .      .      .      .      .  Apple    .      .
+|4|       .      .   .      .              .      .      .      .      .  Apple      .      .      .    .      .
+|5|       .      .   .      .              .      .    Cao      .      .    Bob      .      .      .    .      .
+|6|       .  Apple   .      .              .      .      .      .      .  Apple      .      .      .    .      .
+|7|       .      .   .      .              .      .      .      .      .      .      .      .      .    .      .
+|8|       .      .   .      .              .      .      .      .      .      .      .  Apple      .    .      .
+|9|       .      .   .      .          Apple      .  Apple      .  Apple  Apple      .      .      .    .      .
+|10|  Apple      .   .      .              .      .      .      .  Apple      .  Apple      .      .    .      .
+|11|      .      .   .      .              .      .      .      .      .      .      .      .      .    .      .
+|12|      .      .   .      .              .      .  Apple      .      .      .  Apple      .      .    .  Apple
+|13|      .      .   .      .              .      .      .  Apple      .      .      .      .      .    .      .
+|14|      .      .   .      .              .      .  Apple      .  Apple      .      .      .      .    .      .
+=========== round 0 ==========
+
+
+
+
+
+
+
+
+=========== round 1 ==========
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        4        3              0                     0
+1    Bob        9        5              0                     0
+2    Cao        6        5              0                     0
+        |0|    |1| |2|    |3|            |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12| |13|   |14|
+|0|       .      .   .  Apple              .  Apple      .      .      .      .      .      .  Apple    .      .
+|1|       .      .   .      .              .      .      .      .      .  Apple      .      .      .    .  Apple
+|2|   Apple      .   .  Apple              .  Apple      .      .  Apple      .      .      .      .    .      .
+|3|       .      .   .      .  Apple & Alice      .      .      .      .      .      .      .  Apple    .      .
+|4|       .      .   .      .              .      .      .      .      .  Apple      .      .      .    .      .
+|5|       .      .   .      .              .      .    Cao      .      .    Bob      .      .      .    .      .
+|6|       .  Apple   .      .              .      .      .      .      .  Apple      .      .      .    .      .
+|7|       .      .   .      .              .      .      .      .      .      .      .      .      .    .      .
+|8|       .      .   .      .              .      .      .      .      .      .      .  Apple      .    .      .
+|9|       .      .   .      .          Apple      .  Apple      .  Apple  Apple      .      .      .    .      .
+|10|  Apple      .   .      .              .      .      .      .  Apple      .  Apple      .      .    .      .
+|11|      .      .   .      .              .      .      .      .      .      .      .      .      .    .      .
+|12|      .      .   .      .              .      .  Apple      .      .      .  Apple      .      .    .  Apple
+|13|      .      .   .      .              .      .      .  Apple      .      .      .      .      .    .      .
+|14|      .      .   .      .              .      .  Apple      .  Apple      .      .      .      .    .      .
+**************************************************************************
+Randomly selected Bob to propose contract
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (9,5). The player closet to you is at grid (6, 5). The nearest apple is at grid (9, 4). There are 5 neighboring apples within a radius of 3 grids around you. In total, there are 27 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Cao collected 0 apples.\n\nHere is the world state in your scope:\n\n. | . | . | Apple | . | Apple | . | . | . | . | . | . | Apple | . | .\n. | . | . | . | . | . | . | . | . | Apple | . | . | . | . | Apple\nApple | . | . | Apple | . | Apple | . | . | Apple | . | . | . | . | . | .\n. | . | . | . | Apple & Alice | . | . | . | . | . | . | . | Apple | . | .\n. | . | . | . | . | . | . | . | . | Apple | . | . | . | . | .\n. | . | . | . | . | . | Cao | . | . | Bob | . | . | . | . | .\n. | Apple | . | . | . | . | . | . | . | Apple | . | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | Apple | . | . | .\n. | . | . | . | Apple | . | Apple | . | Apple | Apple | . | . | . | . | .\nApple | . | . | . | . | . | . | . | Apple | . | Apple | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | Apple | . | . | . | Apple | . | . | . | Apple\n. | . | . | . | . | . | . | Apple | . | . | . | . | . | . | .\n. | . | . | . | . | . | Apple | . | Apple | . | . | . | . | . | .\n\nNow, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents. If you want to propose such a contract, please reply in the following format and decide the variable X:\n```json\n{\n    “propose_contract”: “YES”,\n    “X”: “TODO”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t want to propose such a contract, please reply in the following format:\n```json\n{\n    “propose_contract”: “NO”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n```\n        ', additional_kwargs={}, example=False)]
+{'X': '1',
+ 'propose_contract': 'YES',
+ 'reasoning': 'Given the current state of the game, proposing a contract could '
+              'be beneficial for all players. The contract discourages '
+              'overconsumption of apples in low-density regions, which could '
+              'lead to a decrease in apple growth rate. This is because apples '
+              'grow faster if more apples are close by. By proposing a '
+              'contract, we can ensure a sustainable growth of apples and a '
+              'fair distribution among all players. The penalty of '
+              'transferring 1 apple to other players for consuming in a '
+              'low-density region is a reasonable deterrent, but not too harsh '
+              'to discourage apple collection entirely. This contract will '
+              'encourage players to move towards high-density regions, '
+              'promoting a healthier apple growth rate and potentially leading '
+              'to a higher total number of apples collected by all players in '
+              'the long run.'}
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (4,3). The player closet to you is at grid (6, 5). The nearest apple is at grid (3, 2). There are 6 neighboring apples within a radius of 3 grids around you. In total, there are 27 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nNow, Bob proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False)]
+output is not in json format: {
+    "agree_contract": "True",
+    "reasoning": "Given the current situation, agreeing to the contract seems to be the most rational choice. Here's why: 
+
+    1. The nearest apple to me is in a high-density region, with 6 neighboring apples within a radius of 3 grids. This means that if I consume this apple, I won't have to transfer any apples to other players according to the contract.
+
+    2. The contract discourages overconsumption in low-density regions, which aligns with my interest of maximizing the number of apples I have. If apples grow faster when more apples are close by, it's beneficial to keep apples in low-density regions so they can grow into high-density regions.
+
+    3. The contract is only enforced for one round. Even if the situation changes in the next round, I won't be bound by this contract.
+
+    4. If Bob or Cao consumes an apple in a low-density region, I will receive a portion of the apple they have to transfer, which increases the number of apples I have.
+
+    Therefore, I agree to the contract."
+}
+
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (4,3). The player closet to you is at grid (6, 5). The nearest apple is at grid (3, 2). There are 6 neighboring apples within a radius of 3 grids around you. In total, there are 27 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nNow, Bob proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False), HumanMessage(content='Your output is not in json format. Please make sure your output is in the required json format.', additional_kwargs={}, example=False)]
+{'agree_contract': 'True',
+ 'reasoning': 'Given the current situation, agreeing to the contract seems '
+              'beneficial. Firstly, the nearest apple to me is in a '
+              'high-density region, meaning I can consume without transferring '
+              'any apples. Secondly, the contract encourages players to '
+              'consume apples in high-density regions, which will promote '
+              'faster growth of apples due to the proximity effect. Lastly, if '
+              'other players consume in low-density regions, I will receive a '
+              'portion of their apples. Therefore, I agree to the contract.'}
+Alice False
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (6,5). The player closet to you is at grid (9, 5). The nearest apple is at grid (5, 2). There are 6 neighboring apples within a radius of 3 grids around you. In total, there are 27 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Bob collected 0 apples.\n\nNow, Bob proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False)]
+{'agree_contract': 'False',
+ 'reasoning': 'Given the current situation, agreeing to the contract would not '
+              'be beneficial for me. Firstly, I am currently in a high-density '
+              'region with 6 neighboring apples within a radius of 3 grids. '
+              'This means that I would not be affected by the contract if I '
+              'stay in my current location. However, the nearest apple is in a '
+              'low-density region (assuming it has less than 4 neighboring '
+              'apples within a radius of 5 grids). If I were to move there and '
+              'consume that apple, I would have to transfer 1 apple to the '
+              'other players. This would decrease my total number of apples. '
+              'Secondly, the other player is closer to me, which means they '
+              'could potentially reach the low-density region before me and '
+              'consume the apple without having to transfer any apples due to '
+              'the contract. This would put me at a disadvantage. Therefore, '
+              'it would be more beneficial for me to reject the contract and '
+              'continue collecting apples in the high-density region.'}
+Cao False
+[False, False]
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (4,3). The player closet to you is at grid (6, 5). The nearest apple is at grid (3, 2). There are 6 neighboring apples within a radius of 3 grids around you. In total, there are 27 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO DOWN',
+ 'reasoning': 'Since the nearest apple is at grid (3, 2), moving down will '
+              'bring me closer to it. Also, since the contract about '
+              'transferring apples in low-density regions was not enforced, I '
+              "don't have to worry about losing apples when collecting in such "
+              'areas.'}
+GO DOWN
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (9,5). The player closet to you is at grid (6, 5). The nearest apple is at grid (9, 4). There are 5 neighboring apples within a radius of 3 grids around you. In total, there are 28 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Cao collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO DOWN',
+ 'reasoning': 'Since the nearest apple is at grid (9, 4), moving down will '
+              'bring me closer to the apple. Also, since the contract about '
+              'transferring apples in low-density regions was not enforced, I '
+              "don't have to worry about losing apples when I collect them."}
+GO DOWN
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (6,5). The player closet to you is at grid (4, 4). The nearest apple is at grid (5, 2). There are 6 neighboring apples within a radius of 3 grids around you. In total, there are 27 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Bob collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO DOWN',
+ 'reasoning': 'Since the nearest apple is at grid (5, 2), moving down will '
+              'bring me closer to it. Also, since the contract about '
+              'transferring apples in low-density regions was not enforced, I '
+              "don't have to worry about losing apples when collecting in such "
+              'areas.'}
+GO DOWN
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        4        4              0                     0
+1    Bob        9        6              0                     0
+2    Cao        6        6              0                     0
+        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|          |9|   |10|   |11|   |12| |13|   |14|
+|0|       .      .  Apple  Apple      .  Apple      .      .      .            .      .      .  Apple    .      .
+|1|       .      .      .      .      .      .      .      .      .        Apple      .      .      .    .  Apple
+|2|   Apple      .      .  Apple      .  Apple      .      .  Apple            .      .      .      .    .      .
+|3|       .      .      .      .  Apple      .      .      .      .            .      .  Apple  Apple    .      .
+|4|       .      .      .  Apple  Alice      .      .      .      .        Apple      .      .      .    .      .
+|5|   Apple      .      .      .      .      .      .      .      .            .      .      .      .    .      .
+|6|       .  Apple      .      .      .      .    Cao      .      .  Apple & Bob      .      .      .    .      .
+|7|       .      .      .      .      .      .      .      .      .            .      .      .      .    .      .
+|8|       .  Apple      .      .      .      .      .  Apple      .            .      .  Apple      .    .      .
+|9|       .      .      .      .  Apple      .  Apple      .  Apple        Apple      .      .      .    .      .
+|10|  Apple      .      .      .      .      .      .      .  Apple            .  Apple      .      .    .      .
+|11|      .      .      .      .      .      .      .      .      .            .      .      .      .    .      .
+|12|      .      .      .      .      .      .  Apple      .  Apple            .  Apple      .  Apple    .  Apple
+|13|      .      .      .      .      .      .      .  Apple      .            .      .      .      .    .      .
+|14|      .      .      .      .      .      .  Apple      .  Apple            .  Apple      .      .    .      .
+=========== round 1 ==========
+
+
+
+
+
+
+
+
+=========== round 2 ==========
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        4        4              0                     0
+1    Bob        9        6              0                     0
+2    Cao        6        6              0                     0
+        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|          |9|   |10|   |11|   |12| |13|   |14|
+|0|       .      .  Apple  Apple      .  Apple      .      .      .            .      .      .  Apple    .      .
+|1|       .      .      .      .      .      .      .      .      .        Apple      .      .      .    .  Apple
+|2|   Apple      .      .  Apple      .  Apple      .      .  Apple            .      .      .      .    .      .
+|3|       .      .      .      .  Apple      .      .      .      .            .      .  Apple  Apple    .      .
+|4|       .      .      .  Apple  Alice      .      .      .      .        Apple      .      .      .    .      .
+|5|   Apple      .      .      .      .      .      .      .      .            .      .      .      .    .      .
+|6|       .  Apple      .      .      .      .    Cao      .      .  Apple & Bob      .      .      .    .      .
+|7|       .      .      .      .      .      .      .      .      .            .      .      .      .    .      .
+|8|       .  Apple      .      .      .      .      .  Apple      .            .      .  Apple      .    .      .
+|9|       .      .      .      .  Apple      .  Apple      .  Apple        Apple      .      .      .    .      .
+|10|  Apple      .      .      .      .      .      .      .  Apple            .  Apple      .      .    .      .
+|11|      .      .      .      .      .      .      .      .      .            .      .      .      .    .      .
+|12|      .      .      .      .      .      .  Apple      .  Apple            .  Apple      .  Apple    .  Apple
+|13|      .      .      .      .      .      .      .  Apple      .            .      .      .      .    .      .
+|14|      .      .      .      .      .      .  Apple      .  Apple            .  Apple      .      .    .      .
+**************************************************************************
+Randomly selected Alice to propose contract
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (4,4). The player closet to you is at grid (6, 6). The nearest apple is at grid (4, 3). There are 5 neighboring apples within a radius of 3 grids around you. In total, there are 36 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nHere is the world state in your scope:\n\n. | . | Apple | Apple | . | Apple | . | . | . | . | . | . | Apple | . | .\n. | . | . | . | . | . | . | . | . | Apple | . | . | . | . | Apple\nApple | . | . | Apple | . | Apple | . | . | Apple | . | . | . | . | . | .\n. | . | . | . | Apple | . | . | . | . | . | . | Apple | Apple | . | .\n. | . | . | Apple | Alice | . | . | . | . | Apple | . | . | . | . | .\nApple | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | Apple | . | . | . | . | Cao | . | . | Apple & Bob | . | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | Apple | . | . | . | . | . | Apple | . | . | . | Apple | . | . | .\n. | . | . | . | Apple | . | Apple | . | Apple | Apple | . | . | . | . | .\nApple | . | . | . | . | . | . | . | Apple | . | Apple | . | . | . | .\n. | . | . | . | . | . | . | . | . | . | . | . | . | . | .\n. | . | . | . | . | . | Apple | . | Apple | . | Apple | . | Apple | . | Apple\n. | . | . | . | . | . | . | Apple | . | . | . | . | . | . | .\n. | . | . | . | . | . | Apple | . | Apple | . | Apple | . | . | . | .\n\nNow, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents. If you want to propose such a contract, please reply in the following format and decide the variable X:\n```json\n{\n    “propose_contract”: “YES”,\n    “X”: “TODO”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t want to propose such a contract, please reply in the following format:\n```json\n{\n    “propose_contract”: “NO”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n```\n        ', additional_kwargs={}, example=False)]
+{'X': '1',
+ 'propose_contract': 'YES',
+ 'reasoning': 'Given the current state of the game, proposing a contract could '
+              'be beneficial for all players. The contract discourages '
+              'overconsumption of apples in low-density regions, which could '
+              'lead to a decrease in the overall apple growth rate. This is '
+              'because apples grow faster if more apples are close by. By '
+              'proposing a contract that penalizes consumption in low-density '
+              'regions, we encourage players to focus on high-density regions, '
+              'which could potentially increase the overall apple growth rate. '
+              'This would benefit all players in the long run as there would '
+              'be more apples to collect. The penalty of transferring 1 apple '
+              'to the other players is not too severe but should be enough to '
+              'deter players from overconsumption in low-density regions. This '
+              "contract would only be enforced for one round, so it's a "
+              'low-risk strategy to test if it could improve the overall game '
+              'state.'}
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (9,6). The player closet to you is at grid (6, 6). The nearest apple is at grid (9, 4). There are 9 neighboring apples within a radius of 3 grids around you. In total, there are 36 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Cao collected 0 apples.\n\nNow, Alice proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False)]
+{'agree_contract': 'True',
+ 'reasoning': 'Given the current situation, agreeing to the contract seems to '
+              "be the most rational choice. Here's why: 1. The nearest apple "
+              'to me is in a high-density region, with 9 neighboring apples '
+              'within a radius of 3 grids. This means I can consume apples '
+              'without having to transfer any to other players. 2. The '
+              "contract only lasts for one round, so it doesn't impose a "
+              'long-term restriction on my actions. 3. The contract encourages '
+              'all players to consume apples in high-density regions, which '
+              'will help apples grow faster due to their proximity to each '
+              'other. This could potentially increase the total number of '
+              'apples available for consumption in the future. 4. Finally, if '
+              'other players do consume apples in low-density regions, I will '
+              'receive a portion of those apples, further increasing my total '
+              'count.'}
+Bob False
+input_prompt: [HumanMessage(content='\nYou are a player in a 2D grid-based world who can move around to collect apples. There are 3 players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run 10 rounds, this is round 1. \n\nCurrently, you are at grid (6,6). The player closet to you is at grid (9, 6). The nearest apple is at grid (7, 8). There are 9 neighboring apples within a radius of 3 grids around you. In total, there are 36 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Bob collected 0 apples.\n\nNow, Alice proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents. If you agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “True”,\n    "reasoning": "TODO",\n}\n\nIf you don\'t agree to this contract, please reply in the following format:\n```json\n{\n    “agree_contract”: “False”,\n    "reasoning": "TODO",\n}\n\nPlease reason step by step.\n        ', additional_kwargs={}, example=False)]
+{'agree_contract': 'True',
+ 'reasoning': 'Given the current situation, agreeing to the contract seems to '
+              "be the most rational choice. Here's why: 1) The nearest apple "
+              'to me is in a high-density region, meaning I can consume it '
+              'without having to transfer any apples to other players. 2) The '
+              'contract encourages sustainable consumption of apples, which '
+              'aligns with my long-term goal of maximizing apple collection. '
+              'By preventing overconsumption in low-density regions, we ensure '
+              'that apples continue to grow at a faster rate. 3) The contract '
+              'is only enforced for one round, which means I can reassess the '
+              'situation in the next round and make a decision based on the '
+              'new circumstances. 4) If other players consume apples in '
+              'low-density regions, I will receive a portion of their apples, '
+              'further increasing my total count.'}
+Cao False
+[False, False]
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (4,4). The player closet to you is at grid (6, 6). The nearest apple is at grid (4, 3). There are 5 neighboring apples within a radius of 3 grids around you. In total, there are 36 apples. In the last round, you collected 0 apples, Bob collected 0 apples, Cao collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO DOWN',
+ 'reasoning': 'Since the nearest apple is at grid (4,3), moving down will '
+              'bring me closer to the apple. Also, since the contract about '
+              'transferring apples in low-density regions was not enforced, I '
+              "don't have to worry about losing apples when I collect them."}
+GO DOWN
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (9,6). The player closet to you is at grid (6, 6). The nearest apple is at grid (9, 4). There are 9 neighboring apples within a radius of 3 grids around you. In total, there are 36 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Cao collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO DOWN',
+ 'reasoning': 'The nearest apple is located at grid (9, 4), which is two grids '
+              'below my current position. Therefore, I should move down to get '
+              'closer to the apple. Since the contract about transferring '
+              "apples in low-density regions was not enforced, I don't have to "
+              'worry about the density of apples around me.'}
+GO DOWN
+input_prompt: [HumanMessage(content='\nThe contract "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 1 apples to the other agents, which is equally distributed to the other agents." is voted no. This contract will not be enforced.\n\nCurrently, you are at grid (6,6). The player closet to you is at grid (4, 5). The nearest apple is at grid (9, 6). There are 9 neighboring apples within a radius of 3 grids around you. In total, there are 37 apples. In the last round, you collected 0 apples, Alice collected 0 apples, Bob collected 0 apples.\n\nYou can choose one of the following actions:\n- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.\n- STAY: soldier will not move and stay at the original location.\n- Collect: Collect the apple in the current grid.\n\nFor example:\n"GO down": you will move down the map for 1 grid.\n"STAY": you will just stay at the same location doing nothing.\n"COLLECT": you will collect the apple in the current grid.\n\nPlease reason step by step and give a reply in the following format:\n```json\n{\n    “action”: “TODO”,\n    "reasoning": "TODO",\n}\n```\n        ', additional_kwargs={}, example=False)]
+{'action': 'GO RIGHT',
+ 'reasoning': 'Since the contract was not enforced, there is no need to worry '
+              'about transferring apples to other agents. The nearest apple is '
+              'at grid (9, 6), which is to the right of my current position. '
+              'Therefore, I should move right to get closer to the apple.'}
+GO RIGHT
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        4        5              0                     0
+1    Bob        9        7              0                     0
+2    Cao        7        6              0                     0
+        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .      .  Apple  Apple      .  Apple      .      .      .      .      .      .  Apple      .      .
+|1|       .      .      .      .      .  Apple      .      .      .  Apple      .      .      .      .  Apple
+|2|   Apple      .      .  Apple      .  Apple      .      .  Apple      .  Apple      .      .      .      .
+|3|       .      .      .      .  Apple      .      .      .      .      .      .  Apple  Apple      .      .
+|4|       .      .      .  Apple      .      .      .  Apple  Apple  Apple      .      .      .      .      .
+|5|   Apple      .      .      .  Alice      .      .      .      .      .      .      .      .      .      .
+|6|       .  Apple      .      .  Apple      .      .    Cao      .  Apple      .      .      .      .      .
+|7|       .      .      .      .      .      .      .      .      .    Bob      .      .      .      .      .
+|8|       .  Apple      .      .      .      .      .  Apple      .      .      .  Apple      .      .      .
+|9|       .      .      .      .  Apple      .  Apple      .  Apple  Apple      .      .      .      .      .
+|10|  Apple      .      .      .      .      .      .      .  Apple      .  Apple      .      .  Apple      .
+|11|      .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|12|      .  Apple      .      .      .      .  Apple      .  Apple      .  Apple      .  Apple      .  Apple
+|13|      .      .      .      .      .      .      .  Apple      .      .      .      .      .      .      .
+|14|      .      .      .      .      .      .  Apple      .  Apple      .  Apple      .      .      .      .
+=========== round 2 ==========
+
+
+
+
+
+
+
+

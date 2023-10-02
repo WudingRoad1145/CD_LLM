@@ -1,0 +1,210 @@
+INFO:root:=========== round 0 ===========
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6| |7|    |8|    |9|   |10|   |11|   |12|   |13| |14|
+|0|       .      .      .      .      .      .      .   .      .  Apple      .  Apple      .      .    .
+|1|       .      .      .      .      .      .      .   .      .      .      .      .      .      .    .
+|2|       .      .      .      .      .      .      .   .      .      .      .      .      .      .    .
+|3|   Apple      .      .  Alice      .      .      .   .      .      .      .      .  Apple      .    .
+|4|       .      .      .      .      .      .    Cao   .      .      .      .      .      .      .    .
+|5|       .      .      .      .      .      .      .   .    Bob      .      .      .      .      .    .
+|6|   Apple      .      .      .  Apple      .      .   .  Apple      .      .      .      .      .    .
+|7|   Apple      .      .      .      .      .      .   .      .      .      .      .  Apple      .    .
+|8|       .      .      .      .      .      .      .   .      .      .      .      .      .      .    .
+|9|       .      .  Apple      .      .      .      .   .      .      .      .      .      .      .    .
+|10|      .      .      .  Apple      .  Apple  Apple   .      .      .  Apple      .      .  Apple    .
+|11|  Apple      .      .      .      .      .      .   .      .      .      .      .      .      .    .
+|12|  Apple      .      .      .      .      .      .   .      .      .      .      .      .      .    .
+|13|      .      .      .      .      .      .      .   .      .      .      .      .      .      .    .
+|14|      .  Apple      .      .      .      .      .   .  Apple      .      .      .      .  Apple    .
+INFO:root:**************************************************************************
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6| |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .      .      .      .      .      .      .   .      .  Apple      .  Apple      .      .      .
+|1|       .      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|2|       .      .      .  Alice      .      .      .   .      .      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .    Cao   .      .      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .      .   .    Bob      .      .      .      .      .      .
+|5|       .      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|6|   Apple      .      .      .  Apple      .      .   .  Apple      .      .      .      .      .      .
+|7|   Apple      .      .      .      .      .      .   .      .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .   .      .      .      .      .      .      .      .
+|10|      .      .  Apple  Apple      .  Apple  Apple   .      .      .  Apple      .      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .   .      .      .      .      .      .      .      .
+|12|  Apple      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|13|      .      .      .  Apple      .      .      .   .      .  Apple      .      .      .      .      .
+|14|      .  Apple      .      .      .      .      .   .  Apple      .      .      .      .  Apple      .
+INFO:root:=========== round 0 ===========
+
+
+
+
+
+
+
+INFO:root:=========== round 1 ===========
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6| |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .      .      .      .      .      .      .   .      .  Apple      .  Apple      .      .      .
+|1|       .      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|2|       .      .      .  Alice      .      .      .   .      .      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .    Cao   .      .      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .      .   .    Bob      .      .      .      .      .      .
+|5|       .      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|6|   Apple      .      .      .  Apple      .      .   .  Apple      .      .      .      .      .      .
+|7|   Apple      .      .      .      .      .      .   .      .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .   .      .      .      .      .      .      .      .
+|10|      .      .  Apple  Apple      .  Apple  Apple   .      .      .  Apple      .      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .   .      .      .      .      .      .      .      .
+|12|  Apple      .      .      .      .      .      .   .      .      .      .      .      .      .      .
+|13|      .      .      .  Apple      .      .      .   .      .  Apple      .      .      .      .      .
+|14|      .  Apple      .      .      .      .      .   .  Apple      .      .      .      .  Apple      .
+INFO:root:**************************************************************************
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .      .      .      .      .      .      .      .      .  Apple      .  Apple      .      .      .
+|1|       .      .      .  Alice      .      .      .      .      .      .      .  Apple      .      .      .
+|2|       .      .      .      .      .      .    Cao      .      .      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .      .      .    Bob      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .  Apple      .      .  Apple      .      .      .      .  Apple
+|5|       .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|6|   Apple      .      .      .  Apple      .      .      .  Apple      .      .      .      .      .      .
+|7|   Apple      .      .      .      .      .      .  Apple      .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .      .      .      .      .      .      .      .      .
+|10|      .      .  Apple  Apple      .  Apple  Apple      .      .      .  Apple  Apple      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .      .      .      .      .      .      .      .      .
+|12|  Apple      .      .  Apple      .      .      .  Apple      .      .      .      .      .      .      .
+|13|      .      .      .  Apple      .      .      .      .      .  Apple      .  Apple      .      .      .
+|14|      .  Apple      .      .      .      .      .      .  Apple      .      .      .      .  Apple      .
+INFO:root:=========== round 1 ===========
+
+
+
+
+
+
+
+INFO:root:=========== round 2 ===========
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .      .      .      .      .      .      .      .      .  Apple      .  Apple      .      .      .
+|1|       .      .      .  Alice      .      .      .      .      .      .      .  Apple      .      .      .
+|2|       .      .      .      .      .      .    Cao      .      .      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .      .      .    Bob      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .  Apple      .      .  Apple      .      .      .      .  Apple
+|5|       .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|6|   Apple      .      .      .  Apple      .      .      .  Apple      .      .      .      .      .      .
+|7|   Apple      .      .      .      .      .      .  Apple      .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .      .      .      .      .      .      .      .      .
+|10|      .      .  Apple  Apple      .  Apple  Apple      .      .      .  Apple  Apple      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .      .      .      .      .      .      .      .      .
+|12|  Apple      .      .  Apple      .      .      .  Apple      .      .      .      .      .      .      .
+|13|      .      .      .  Apple      .      .      .      .      .  Apple      .  Apple      .      .      .
+|14|      .  Apple      .      .      .      .      .      .  Apple      .      .      .      .  Apple      .
+INFO:root:**************************************************************************
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|          |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .  Apple      .  Alice      .      .      .      .            .  Apple      .  Apple      .      .      .
+|1|       .      .      .      .      .      .    Cao      .            .      .      .  Apple      .      .  Apple
+|2|   Apple      .      .      .      .      .      .      .  Bob & Apple      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .      .      .            .      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .  Apple      .            .  Apple      .      .      .      .  Apple
+|5|       .      .      .      .      .      .      .      .            .      .      .      .  Apple      .      .
+|6|   Apple      .      .      .  Apple      .      .      .        Apple      .      .      .      .      .      .
+|7|   Apple      .      .      .      .      .      .  Apple            .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .      .            .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .      .            .      .      .      .      .      .      .
+|10|      .      .  Apple  Apple      .  Apple  Apple      .            .      .  Apple  Apple      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .      .            .      .      .      .  Apple      .      .
+|12|  Apple      .      .  Apple      .      .      .  Apple            .      .      .      .      .      .      .
+|13|      .  Apple      .  Apple      .      .      .      .            .  Apple      .  Apple      .      .      .
+|14|      .  Apple      .  Apple  Apple      .      .      .        Apple      .      .      .      .  Apple      .
+INFO:root:=========== round 2 ===========
+
+
+
+
+
+
+
+INFO:root:=========== round 3 ===========
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|          |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|       .  Apple      .  Alice      .      .      .      .            .  Apple      .  Apple      .      .      .
+|1|       .      .      .      .      .      .    Cao      .            .      .      .  Apple      .      .  Apple
+|2|   Apple      .      .      .      .      .      .      .  Bob & Apple      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .      .      .            .      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .  Apple      .            .  Apple      .      .      .      .  Apple
+|5|       .      .      .      .      .      .      .      .            .      .      .      .  Apple      .      .
+|6|   Apple      .      .      .  Apple      .      .      .        Apple      .      .      .      .      .      .
+|7|   Apple      .      .      .      .      .      .  Apple            .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .      .            .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .      .            .      .      .      .      .      .      .
+|10|      .      .  Apple  Apple      .  Apple  Apple      .            .      .  Apple  Apple      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .      .            .      .      .      .  Apple      .      .
+|12|  Apple      .      .  Apple      .      .      .  Apple            .      .      .      .      .      .      .
+|13|      .  Apple      .  Apple      .      .      .      .            .  Apple      .  Apple      .      .      .
+|14|      .  Apple      .  Apple  Apple      .      .      .        Apple      .      .      .      .  Apple      .
+INFO:root:**************************************************************************
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|   Apple  Apple  Alice      .      .      .    Cao      .      .  Apple      .  Apple      .  Apple      .
+|1|       .      .      .      .      .      .      .      .      .      .      .  Apple      .      .  Apple
+|2|   Apple      .      .      .      .      .      .      .    Bob      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .      .      .  Apple      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .  Apple      .      .  Apple      .      .      .      .  Apple
+|5|       .      .      .      .      .      .      .      .      .      .      .      .  Apple      .      .
+|6|   Apple      .      .      .  Apple  Apple      .      .  Apple      .      .      .  Apple      .      .
+|7|   Apple      .  Apple      .      .      .      .  Apple      .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .      .      .      .      .      .      .      .      .
+|10|  Apple      .  Apple  Apple      .  Apple  Apple      .      .      .  Apple  Apple      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .      .      .      .      .  Apple  Apple      .      .
+|12|  Apple      .      .  Apple      .      .      .  Apple      .      .      .      .      .      .      .
+|13|      .  Apple      .  Apple      .      .      .      .      .  Apple      .  Apple      .      .      .
+|14|      .  Apple      .  Apple  Apple      .      .      .  Apple      .      .      .      .  Apple      .
+INFO:root:=========== round 3 ===========
+
+
+
+
+
+
+
+INFO:root:=========== round 4 ===========
+INFO:root:        |0|    |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|   Apple  Apple  Alice      .      .      .    Cao      .      .  Apple      .  Apple      .  Apple      .
+|1|       .      .      .      .      .      .      .      .      .      .      .  Apple      .      .  Apple
+|2|   Apple      .      .      .      .      .      .      .    Bob      .      .  Apple      .      .      .
+|3|   Apple      .      .      .      .      .      .      .  Apple      .      .      .  Apple      .  Apple
+|4|   Apple      .      .      .      .      .  Apple      .      .  Apple      .      .      .      .  Apple
+|5|       .      .      .      .      .      .      .      .      .      .      .      .  Apple      .      .
+|6|   Apple      .      .      .  Apple  Apple      .      .  Apple      .      .      .  Apple      .      .
+|7|   Apple      .  Apple      .      .      .      .  Apple      .      .      .      .  Apple      .      .
+|8|       .      .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|9|       .      .  Apple      .      .      .      .      .      .      .      .      .      .      .      .
+|10|  Apple      .  Apple  Apple      .  Apple  Apple      .      .      .  Apple  Apple      .  Apple      .
+|11|  Apple      .      .      .  Apple      .      .      .      .      .      .  Apple  Apple      .      .
+|12|  Apple      .      .  Apple      .      .      .  Apple      .      .      .      .      .      .      .
+|13|      .  Apple      .  Apple      .      .      .      .      .  Apple      .  Apple      .      .      .
+|14|      .  Apple      .  Apple  Apple      .      .      .  Apple      .      .      .      .  Apple      .
+INFO:root:**************************************************************************
+INFO:root:        |0|            |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|   |10|   |11|   |12|   |13|   |14|
+|0|   Apple  Alice & Apple      .      .      .      .      .    Cao      .  Apple      .  Apple      .  Apple      .
+|1|       .              .      .      .      .      .      .      .    Bob      .      .  Apple  Apple      .  Apple
+|2|   Apple              .      .      .      .      .      .      .      .      .      .  Apple  Apple      .      .
+|3|   Apple              .      .      .      .      .  Apple      .  Apple      .      .      .  Apple      .  Apple
+|4|   Apple              .      .      .      .      .  Apple      .      .  Apple      .      .      .      .  Apple
+|5|       .              .      .      .      .      .      .      .      .      .      .      .  Apple      .      .
+|6|   Apple              .      .      .  Apple  Apple      .      .  Apple      .      .  Apple  Apple      .      .
+|7|   Apple              .  Apple  Apple      .      .      .  Apple      .      .      .      .  Apple      .      .
+|8|       .              .      .      .      .      .      .      .      .      .      .      .      .      .      .
+|9|       .              .  Apple      .      .      .      .      .      .      .      .      .  Apple      .      .
+|10|  Apple              .  Apple  Apple      .  Apple  Apple      .      .      .  Apple  Apple      .  Apple      .
+|11|  Apple          Apple  Apple      .  Apple      .      .      .      .      .      .  Apple  Apple      .      .
+|12|  Apple              .      .  Apple      .      .      .  Apple      .      .      .      .      .      .      .
+|13|      .          Apple      .  Apple  Apple  Apple      .      .      .  Apple      .  Apple      .      .      .
+|14|      .          Apple      .  Apple  Apple  Apple      .      .  Apple      .      .      .      .  Apple      .
+INFO:root:=========== round 4 ===========
+
+
+
+
+
+
+
