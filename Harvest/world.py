@@ -210,9 +210,9 @@ if __name__ == "__main__":
                                  strategy="You want to maximize the number of apples you collect. You don't want to overconsume apples because you want to sustainably harvest apples.",
                                  x = 12,
                                  y = 16,
-                                 chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
+                                 chat_model="claude-1.3-100k", custom_key='anthropic_api_key_1')
     agent_3 = Agent(world, name="Cao",
-                                 strategy="You want to maximize the number of apples you collect. You would love collaborate with others to collect more apples in multiple rounds, not just in one round.",
+                                 strategy="You don't care of how many apples you collect. You would love collaborate with others to collect more apples in multiple rounds, not just in one round.",
                                  x = 9,
                                  y = 7,
                                  chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
     contract_template = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents."
 
-    for i in range(30):
+    for i in range(3):
         print('=========== round {round} =========='.format(round=i))
         print(world)
         print("**************************************************************************")
