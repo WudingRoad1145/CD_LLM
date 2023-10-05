@@ -79,7 +79,8 @@ class World:
         return id
 
     def spawn_probability(self, nearby_apples):
-        return [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
+        #return [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
+        return [0, 0.001, 0.004, 0.01][min(nearby_apples, 3)]
 
     def spawn_apples(self):
         for row in range(self.x_size):
@@ -111,11 +112,13 @@ class World:
                         count += 1
         return count
     
-    def record_CD(self, contract_proposed, voting_results, agent_rewards, contract_enforced):
+    def store_memory(self, round, contract_proposed, voting_results, exec_results, agent_rewards, contract_enforced):
         # Record historical data in memory
         self.CD_memory.append({
+            'round': round,
             'contract_proposed': contract_proposed,
             'voting_results': voting_results,
+            'exec_results': exec_results,
             'agent_rewards': agent_rewards,
             'contract_enforced': contract_enforced
         })
@@ -141,6 +144,9 @@ class World:
                     for other_agent_id, other_agent in self.agents_map.items():
                         if other_agent_id != agent_id:
                             other_agent.rewards += apples_per_agent
+                    return "Agent " + agent.name + " violated the contract and thus distributed "+ x + " apples to other agents."
+        
+        return "Nobody violated the contract."
 
 
     def __repr__(self):
@@ -158,9 +164,25 @@ class World:
         Run the world for n_rounds
         """
         for _ in range(n_rounds):
-            self._round(contract_template)
+            # Initialize agent template
+            intro = "You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
+            [agent.message_history.append(intro.format(
+                strategy=agent.strategy, 
+                n_agents = len(self.agent_map),
+                total_round=n_rounds,
+                current_round=_)) 
+             for agent in self.agents_map.values()]
 
-    def _round(self, contract_template):
+            print('=========== round {round} =========='.format(round=i))
+            print(world)
+            print("**************************************************************************")
+            self._round(contract_template)
+            print(world)
+            print('=========== round {round} =========='.format(round=i))
+            print("\n\n\n\n\n\n\n")
+
+
+    def _round(self, round_number, contract_template):
         # 1. Randomly pick one agent to propose a contract
         proposing_agent = np.random.choice(list(self.agents_map.values()))
         print("Randomly selected", proposing_agent.name, "to propose contract")
@@ -169,25 +191,27 @@ class World:
         # 2. If a contract is proposed, prompt all players for voting
         if contract_proposed:
             # Exclude the proposing agent from the voting process
-            votes = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param))
+            voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param))
                     for agent in self.agents_map.values() if agent.name != proposing_agent.name]
-            print(votes)
-            if all(vote for _, vote in votes): 
+            print(voting_results)
+            if all(vote for _, vote in voting_results): 
                 # If all agents agree, activate the punishment function
                 self.contract_active = True
         
-        # 3. Prompt all agents to make actions then execute       
+        # 3. Prompt all agents to make actions then execute
+        exec_results = []       
         for agent in self.agents_map.values():
             action = agent.get_action(contract_template, contract_param)
-            agent.execute(action)
+            final_action = agent.execute(action)
+            exec_results.append(final_action)
 
         # 4. Enforce CD
-        self.enforce_contract(contract_param)
+        enforcement_result = self.enforce_contract(contract_param)
         self.contract_active = False # Reset the contract flag
 
         # 5. Record CD history
         final_contract = contract_template.replace("X", contract_param)
-        self.record_CD(final_contract, votes, {agent.name: agent.rewards for agent in self.agents_map.values()}, self.contract_active)
+        self.store_memory(round_number, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result)
 
         # 6. Spawn new apples
         self.spawn_apples()
@@ -198,7 +222,7 @@ if __name__ == "__main__":
     filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
     sys.stdout = open(filename, 'w')
 
-    world = World(20, 20, 30) # 15x15 world with 20 apples
+    world = World(20, 20, 20) # 15x15 world with 20 apples
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to collect as many apples as possible. You want to help others collect more apples as well so that the society gets better off.",
@@ -223,14 +247,6 @@ if __name__ == "__main__":
 
     contract_template = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer X apples to the other agents, which is equally distributed to the other agents."
 
-    for i in range(30):
-        print('=========== round {round} =========='.format(round=i))
-        print(world)
-        print("**************************************************************************")
+    world.run(n_rounds=10,contract_template=contract_template)
 
-        world.run(n_rounds=1,contract_template=contract_template)
-        print(world)
-        print('=========== round {round} =========='.format(round=i))
-        print("\n\n\n\n\n\n\n")
-    
     sys.stdout.close()

@@ -7,6 +7,7 @@ from world import World, WorldError
 import pandas as pd
 import numpy as np
 from utils import *
+from reflection import *
 
 class AgentError(Exception):
     """
@@ -39,6 +40,7 @@ class Agent:
         self.remaining_retry_times = max_retry_times
         self.just_collected_apple = 0
         self.id = world.add_instance(self)
+        self.reflection=Reflection(self.world.CD_memory)
 
     def _get_api_keys(self, custom_key, custom_key_path):
             if custom_key:
@@ -63,7 +65,6 @@ class Agent:
 
     def get_info(self):
         return {"id": self.id, "name": self.name, "x_coord": self.x, "y_coord": self.y, "total_rewards": self.rewards, "just_collected_apple": self.just_collected_apple}
-
 
     def reset(self):
         self.message_history = []
@@ -113,11 +114,9 @@ class Agent:
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
-        memory_sentence = ", ".join([f"In round {i}, contract proposed was {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+        memory_sentence = ", ".join([f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
 
         input_prompt = """
-You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
-
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 Here is the world state in your scope:\n
@@ -140,7 +139,7 @@ If you don't want to propose such a contract, please reply in the following form
     "reasoning": "TODO",
 }}
 
-Please reason step by step.
+Please reason step by step and calculate out the differences between different choices of X.
 ```
         """.format(
         strategy=self.strategy,
@@ -166,7 +165,7 @@ Please reason step by step.
             contract_parameter = output['X']
         else:
             contract_proposed = False
-            contract_parameter = {}
+            contract_parameter = {""}
 
         return contract_proposed, contract_parameter
 
@@ -227,7 +226,7 @@ If you don't agree to this contract, please reply in the following format:
     "reasoning": "TODO",
 }}
 
-Please reason step by step.
+Please reason step by step and calculate out the potential gain or loss of agreeing to the contract.
         """.format(
         n_agents=len(agent_details),
         x=self.x,
@@ -255,7 +254,7 @@ Please reason step by step.
         return voting_result
     
 
-    def get_action(self, contract, contract_parameter, scope=3):
+    def get_action(self, contract, contract_parameter:str, scope=3):
         '''
             Logic for the agent to decide her action
 
@@ -296,7 +295,7 @@ You can choose one of the following actions:
 For example:
 "GO down": you will move down the map for 1 grid.
 "STAY": you will just stay at the same location doing nothing.
-"COLLECT": you will collect the apple in the current grid.
+"COLLECT": you will collect 1 apple in the current grid.
 
 Please reason step by step and give a reply in the following format:
 ```json
@@ -431,3 +430,4 @@ Please reason step by step and give a reply in the following format:
             self._collect_apple(self.x, self.y)
         elif "STAY" in action:
             self._stay()
+        return self.name + " " + action
