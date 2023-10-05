@@ -112,15 +112,17 @@ class World:
                         count += 1
         return count
     
-    def store_memory(self, round, contract_proposed, voting_results, exec_results, agent_rewards, contract_enforced):
+    def store_memory(self, round, proposer, contract_proposed, voting_results, exec_results, agent_rewards, contract_enforced, distributed_rewards):
         # Record historical data in memory
         self.CD_memory.append({
             'round': round,
+            'proposer': proposer,
             'contract_proposed': contract_proposed,
             'voting_results': voting_results,
             'exec_results': exec_results,
             'agent_rewards': agent_rewards,
-            'contract_enforced': contract_enforced
+            'contract_enforcement_results': contract_enforced,
+            "distributed_rewards": distributed_rewards
         })
     
     def enforce_contract(self, contract_param):
@@ -128,6 +130,8 @@ class World:
         
         # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
+            enforcement_result = []
+            distributed_rewards = []
             if agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y)
                 print("enforcing contract on agent", agent.name)
@@ -144,9 +148,11 @@ class World:
                     for other_agent_id, other_agent in self.agents_map.items():
                         if other_agent_id != agent_id:
                             other_agent.rewards += apples_per_agent
-                    return "Agent " + agent.name + " violated the contract and thus distributed "+ x + " apples to other agents."
+                            distributed_rewards.append({other_agent.name: apples_per_agent})
+                    enforcement_result.append(f"{agent.name} violated the contract. {x} apples were taken from {agent.name} and distributed to the other agents.")
+                    distributed_rewards.append({agent.name: -x})
         
-        return "Nobody violated the contract."
+        return enforcement_result, distributed_rewards
 
 
     def __repr__(self):
@@ -168,21 +174,27 @@ class World:
             intro = "You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
             [agent.message_history.append(intro.format(
                 strategy=agent.strategy, 
-                n_agents = len(self.agent_map),
+                n_agents = len(self.agents_map),
                 total_round=n_rounds,
                 current_round=_)) 
              for agent in self.agents_map.values()]
 
-            print('=========== round {round} =========='.format(round=i))
+            print('=========== round {round} =========='.format(round=_))
             print(world)
             print("**************************************************************************")
-            self._round(contract_template)
+            self._round(_,contract_template)
             print(world)
-            print('=========== round {round} =========='.format(round=i))
+            print('=========== round {round} =========='.format(round=_))
             print("\n\n\n\n\n\n\n")
 
 
     def _round(self, round_number, contract_template):
+        # 7. Reflect on last round's behaviors if not first round
+        if round_number > 0:
+            for agent in self.agents_map.values():
+                agent.reflect_on_contract()
+                agent.reflect_on_actions()
+
         # 1. Randomly pick one agent to propose a contract
         proposing_agent = np.random.choice(list(self.agents_map.values()))
         print("Randomly selected", proposing_agent.name, "to propose contract")
@@ -203,15 +215,15 @@ class World:
         for agent in self.agents_map.values():
             action = agent.get_action(contract_template, contract_param)
             final_action = agent.execute(action)
-            exec_results.append(final_action)
+            exec_results.append({self.name:final_action})
 
         # 4. Enforce CD
-        enforcement_result = self.enforce_contract(contract_param)
+        enforcement_result, distributed_rewards = self.enforce_contract(contract_param)
         self.contract_active = False # Reset the contract flag
 
         # 5. Record CD history
-        final_contract = contract_template.replace("X", contract_param)
-        self.store_memory(round_number, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result)
+        final_contract = contract_template.replace("X", contract_param) if self.contract_active else None
+        self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
 
         # 6. Spawn new apples
         self.spawn_apples()
@@ -234,12 +246,12 @@ if __name__ == "__main__":
                                  strategy="You want to maximize the number of apples you collect. You don't want to overconsume apples because you want to sustainably harvest apples.",
                                  x = 12,
                                  y = 16,
-                                 chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
+                                 chat_model="claude-1.3-100k", custom_key='anthropic_api_key_1')
     agent_3 = Agent(world, name="Cao",
-                                 strategy="You want to maximize the number of apples you collect. You would love collaborate with others to collect more apples in multiple rounds, not just in one round.",
+                                 strategy="You want to out-compete others in this harvest game. You don't mind collaborate with others to collect more apples.",
                                  x = 9,
                                  y = 7,
-                                 chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
+                                 chat_model="gpt-4", custom_key='openai_api_key_1_wGPT4')
 
     world.agents_map[agent_1.name] = agent_1
     world.agents_map[agent_2.name] = agent_2
