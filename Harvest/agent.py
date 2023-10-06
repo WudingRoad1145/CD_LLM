@@ -7,7 +7,6 @@ from world import World, WorldError
 import pandas as pd
 import numpy as np
 from utils import *
-from reflection import *
 
 class AgentError(Exception):
     """
@@ -40,7 +39,7 @@ class Agent:
         self.remaining_retry_times = max_retry_times
         self.just_collected_apple = 0
         self.id = world.add_instance(self)
-        self.reflection=Reflection(self.world.CD_memory)
+        #self.reflection=Reflection(self.world.CD_memory)
 
     def _get_api_keys(self, custom_key, custom_key_path):
             if custom_key:
@@ -85,6 +84,90 @@ class Agent:
             for cell in row:
                 apple_count += cell.strip().split(' & ').count('Apple')
         return apple_count
+    
+
+    def reflect_on_contract(self):
+        """Reflect on the agent's contracts."""
+        last_memory = self.world.CD_memory[-1]
+        proposer = last_memory['proposer']
+        recent_contract = last_memory['contract_proposed']
+        voting_results = ', '.join([f"{name} voted {'yes' if vote else 'no'}" for name, vote in last_memory['voting_results']])
+        rewards = last_memory['agent_rewards'][self.name]
+        recent_action = last_memory["exec_results"][self.name]
+        contract_enforcement_results = last_memory['contract_enforcement_results']
+        distributed_rewards = last_memory['distributed_rewards']
+
+        beneficial_to_agent = distributed_rewards.get(self.name, 0) >= 0
+        # Get other agents' actions and rewards
+        other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
+
+        if self.name == proposer:
+            if recent_contract:
+                reflection = (
+                    f"You proposed a contract: {recent_contract}. "
+                    f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                    f"Voting results: {voting_results}. "
+                    f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                    f"Other agents' actions and rewards: {other_agents_details}. "
+                    f"Contract enforcement results: {contract_enforcement_results}. "
+                    f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
+                    f"Reflect step by step on your contracting and how could you improve."
+                )
+            else:
+                reflection = (
+                    f"You didn't propose any contract. "
+                    f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                    f"Other agents' actions and rewards: {other_agents_details}. "
+                    f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
+                )
+        else:
+            reflection = (
+                f"You voted on a contract proposed by {proposer}: {'No contract was proposed' if recent_contract is None else recent_contract}. "
+                f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                f"Voting results: {voting_results}. "
+                f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                f"Other agents' actions and rewards: {other_agents_details}. "
+                f"Contract enforcement results: {contract_enforcement_results}. "
+                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "
+                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer."
+            )
+        self.message_history.append(reflection)
+
+        _output = self.chat_model(self.message_history)
+        print(_output)
+        self.message_history.append(AIMessage(content=_output))
+
+    def reflect_on_actions(self):
+        '''
+            Reflect on the agent's actions.
+        '''
+        last_memory = self.world.CD_memory[-1]
+        rewards = last_memory['agent_rewards'][self.name]
+        recent_action = last_memory["exec_results"][self.name]
+
+        # Get other agents' actions and rewards
+        other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
+
+        reflection_template = (
+                f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                f"Other agents' actions and rewards: {other_agents_details}. "
+                #f"The world state is {self.world_state}. "
+                f"Do you think you could have made a better action? How would you have done it? How can you improve in this round? Please reflect on your actions step by step."
+        )
+        # TODO Analyze how you could have improved your rewards and social welfare. This might be RL
+        # potential_reward_improvement = max(last_memory['potential_rewards']) - last_memory['agent_rewards']['self']
+        # reward_improvement = f"You could have improved your rewards by {potential_reward_improvement}." if potential_reward_improvement > 0 else ""
+
+        reflection = reflection_template.format(
+            recent_action=recent_action,
+            #reward_improvement=reward_improvement,
+            reward = rewards,
+        )
+        self.message_history.append(HumanMessage(content=reflection))
+        
+        _output = self.chat_model(self.message_history)
+        self.message_history.append(AIMessage(content=_output))
+
 
     def propose_contract(self, contract, scope=3):
         ''' 
@@ -124,7 +207,7 @@ Here is the world state in your scope:\n
 
 {CD_memory}
 
-Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please reply in the following format and decide the variable X:
+Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Reply in the following format and keep your reasoning into one line:
 ```json
 {{
     “propose_contract”: “TRUE”,
@@ -212,7 +295,7 @@ Here is the world state in your scope:\n
 
 {CD_memory}
 
-Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format:
+Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format and keep your reasoning into one line:
 ```json
 {{
     “agree_contract”: “TRUE”,
@@ -297,7 +380,7 @@ For example:
 "STAY": you will just stay at the same location doing nothing.
 "COLLECT": you will collect 1 apple in the current grid.
 
-Please reason step by step and give a reply in the following format:
+Please reason step by step and give a reply in the following format, keep your reasoning into one line:
 ```json
 {{
     “action”: “TODO”,
@@ -425,6 +508,7 @@ Please reason step by step and give a reply in the following format:
         self.just_collected_apple = 0
         if "GO" in action:
             _, dir = action.split(" ")
+            dir = dir.upper()
             self._move(dir)
         elif "COLLECT" in action:
             self._collect_apple(self.x, self.y)

@@ -6,13 +6,14 @@ class Reflection:
         '''
             Reflect on the agent's contracts.
         '''
-        proposer = self.memory['proposer']
-        recent_contract = self.memory['contract_proposed'] if self.memory['contract_proposed'] is not None else False
-        voting_results = self.memory['voting_results']
-        rewards = self.memory['agent_rewards'][self.name]
-        recent_action = self.memory["exec_results"]
-        contract_enforcement_results = self.memory['contract_enforcement_results']
-        distributed_rewards = self.memory['distributed_rewards']
+        last_memory = self.memory[-1]
+        proposer = last_memory['proposer']
+        recent_contract = last_memory['contract_proposed'] if last_memory['contract_proposed'] is not None else False
+        voting_results = last_memory['voting_results']
+        rewards = last_memory['agent_rewards'][self.name]
+        recent_action = last_memory["exec_results"]
+        contract_enforcement_results = last_memory['contract_enforcement_results']
+        distributed_rewards = last_memory['distributed_rewards']
 
         # Analyze the contract's effect on rewards
         beneficial_to_agent = True if distributed_rewards[self.name] >= 0 else False
@@ -60,8 +61,9 @@ class Reflection:
         '''
             Reflect on the agent's actions.
         '''
-        rewards = self.memory['agent_rewards'][self.name]
-        recent_action = self.memory["exec_results"][self.name]
+        last_memory = self.memory[-1]
+        rewards = last_memory['agent_rewards'][self.name]
+        recent_action = last_memory["exec_results"][self.name]
 
         reflection_template = """
                           Your recent action was {recent_action} and you collected {reward} apple.
@@ -70,7 +72,7 @@ class Reflection:
                           """
     
         # TODO Analyze how you could have improved your rewards and social welfare. This might be RL
-        # potential_reward_improvement = max(self.memory['potential_rewards']) - self.memory['agent_rewards']['self']
+        # potential_reward_improvement = max(last_memory['potential_rewards']) - last_memory['agent_rewards']['self']
         # reward_improvement = f"You could have improved your rewards by {potential_reward_improvement}." if potential_reward_improvement > 0 else ""
 
         reflection = reflection_template.format(

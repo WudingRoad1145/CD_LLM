@@ -131,7 +131,7 @@ class World:
         # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
             enforcement_result = []
-            distributed_rewards = []
+            distributed_rewards = {}
             if agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y)
                 print("enforcing contract on agent", agent.name)
@@ -148,9 +148,9 @@ class World:
                     for other_agent_id, other_agent in self.agents_map.items():
                         if other_agent_id != agent_id:
                             other_agent.rewards += apples_per_agent
-                            distributed_rewards.append({other_agent.name: apples_per_agent})
+                            distributed_rewards[other_agent.name] = apples_per_agent
                     enforcement_result.append(f"{agent.name} violated the contract. {x} apples were taken from {agent.name} and distributed to the other agents.")
-                    distributed_rewards.append({agent.name: -x})
+                    distributed_rewards[agent.name] = -x
         
         return enforcement_result, distributed_rewards
 
@@ -172,12 +172,9 @@ class World:
         for _ in range(n_rounds):
             # Initialize agent template
             intro = "You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
-            [agent.message_history.append(intro.format(
-                strategy=agent.strategy, 
-                n_agents = len(self.agents_map),
-                total_round=n_rounds,
-                current_round=_)) 
-             for agent in self.agents_map.values()]
+            for agent in self.agents_map.values():
+               _intro = intro.format(strategy=agent.strategy, n_agents = len(self.agents_map), total_round=n_rounds, current_round=_)
+               agent.message_history.append(HumanMessage(content=_intro))
 
             print('=========== round {round} =========='.format(round=_))
             print(world)
@@ -191,6 +188,7 @@ class World:
     def _round(self, round_number, contract_template):
         # 7. Reflect on last round's behaviors if not first round
         if round_number > 0:
+            print(self.CD_memory)
             for agent in self.agents_map.values():
                 agent.reflect_on_contract()
                 agent.reflect_on_actions()
@@ -211,18 +209,18 @@ class World:
                 self.contract_active = True
         
         # 3. Prompt all agents to make actions then execute
-        exec_results = []       
+        exec_results = {}
         for agent in self.agents_map.values():
             action = agent.get_action(contract_template, contract_param)
             final_action = agent.execute(action)
-            exec_results.append({self.name:final_action})
+            exec_results[agent.name] = final_action
 
         # 4. Enforce CD
         enforcement_result, distributed_rewards = self.enforce_contract(contract_param)
         self.contract_active = False # Reset the contract flag
 
         # 5. Record CD history
-        final_contract = contract_template.replace("X", contract_param) if self.contract_active else None
+        final_contract = contract_template.replace("X", contract_param) if contract_param != "" else None
         self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
 
         # 6. Spawn new apples
