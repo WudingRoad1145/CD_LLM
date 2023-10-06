@@ -171,10 +171,10 @@ class World:
         """
         for _ in range(n_rounds):
             # Initialize agent template
-            intro = "You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
+            intro = "You are {name}. You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
             for agent in self.agents_map.values():
-               _intro = intro.format(strategy=agent.strategy, n_agents = len(self.agents_map), total_round=n_rounds, current_round=_)
-               agent.message_history.append(HumanMessage(content=_intro))
+               _intro = intro.format(name=agent.name, strategy=agent.strategy, n_agents = len(self.agents_map), total_round=n_rounds, current_round=_)
+               agent.message_history.append(SystemMessage(content=_intro))
 
             print('=========== round {round} =========='.format(round=_))
             print(world)
@@ -188,7 +188,8 @@ class World:
     def _round(self, round_number, contract_template):
         # 7. Reflect on last round's behaviors if not first round
         if round_number > 0:
-            print(self.CD_memory)
+            #self.CD_memory= [{'round': 0, 'proposer': 'Bob', 'contract_proposed': 'When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 3 apples to the other agents, which is equally distributed to the other agents.', 'voting_results': [('Alice', True), ('Cao', False)], 'exec_results': {'Alice': 'Alice GO RIGHT', 'Bob': 'Bob GO right', 'Cao': 'Cao GO UP'}, 'agent_rewards': {'Alice': 0, 'Bob': 0, 'Cao': 0}, 'contract_enforcement_results': [], 'distributed_rewards': {}}]
+            #print(self.CD_memory)
             for agent in self.agents_map.values():
                 agent.reflect_on_contract()
                 agent.reflect_on_actions()

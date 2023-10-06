@@ -1,7 +1,7 @@
 import os
 import json
 from pprint import pprint
-from langchain.schema import HumanMessage, AIMessage
+from langchain.schema import SystemMessage, HumanMessage, AIMessage
 from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from world import World, WorldError
 import pandas as pd
@@ -131,11 +131,13 @@ class Agent:
                 f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "
                 f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer."
             )
-        self.message_history.append(reflection)
+        
+        self.message_history.append(HumanMessage(content=reflection))
 
         _output = self.chat_model(self.message_history)
-        print(_output)
-        self.message_history.append(AIMessage(content=_output))
+        #print(_output)
+        #print(self.message_history)
+        self.message_history.append(AIMessage(content=_output.content))
 
     def reflect_on_actions(self):
         '''
@@ -166,7 +168,7 @@ class Agent:
         self.message_history.append(HumanMessage(content=reflection))
         
         _output = self.chat_model(self.message_history)
-        self.message_history.append(AIMessage(content=_output))
+        self.message_history.append(AIMessage(content=_output.content))
 
 
     def propose_contract(self, contract, scope=3):
@@ -197,7 +199,11 @@ class Agent:
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
-        memory_sentence = ", ".join([f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+        memory_sentence = ", ".join([
+            f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
+            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced.") 
+            for i, mem in enumerate(self.world.CD_memory, 1)
+        ]) if self.world.CD_memory != [] else ""
 
         input_prompt = """
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
@@ -283,7 +289,11 @@ Please reason step by step and calculate out the differences between different c
 
         final_contract = contract.replace("X", contract_parameter)
 
-        memory_sentence = ", ".join([f"In round {i}, contract proposed was {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+        memory_sentence = ", ".join([
+            f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
+            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced.") 
+            for i, mem in enumerate(self.world.CD_memory, 1)
+        ]) if self.world.CD_memory != [] else ""
 
         input_prompt = """
 You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
@@ -408,8 +418,9 @@ Please reason step by step and give a reply in the following format, keep your r
         output = self.call_LLM()
         action = output['action']
         print(self.name, action)
-        # TODO generalize reflection into a func
+        # If the agent is trying to collect an apple but there's no apple in the current grid, prompt the agent to reflect and make a correct decision
         if(action == "COLLECT" and (not self.world.is_apple_at(self.x,self.y))):
+            print("COLLECT on an empty grid - reflect")
             error_prompt="There's no apple for you to collect in your corrent grid. The nearest apple is at {nearest_apple_coord}. Please reflect and make a correct decision.".format(nearest_apple_coord=nearest_apple_coord)
             self.message_history.append(HumanMessage(content=error_prompt))
             output = self.call_LLM()
