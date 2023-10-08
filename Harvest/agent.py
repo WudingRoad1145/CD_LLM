@@ -1,7 +1,7 @@
 import os
 import json
 from pprint import pprint
-from langchain.schema import HumanMessage, AIMessage
+from langchain.schema import SystemMessage, HumanMessage, AIMessage
 from langchain.chat_models import ChatOpenAI, ChatAnthropic
 from world import World, WorldError
 import pandas as pd
@@ -64,7 +64,6 @@ class Agent:
     def get_info(self):
         return {"id": self.id, "name": self.name, "x_coord": self.x, "y_coord": self.y, "total_rewards": self.rewards, "just_collected_apple": self.just_collected_apple}
 
-
     def reset(self):
         self.message_history = []
         self.remaining_retry_times = self.max_retry_times
@@ -84,6 +83,92 @@ class Agent:
             for cell in row:
                 apple_count += cell.strip().split(' & ').count('Apple')
         return apple_count
+    
+
+    def reflect_on_contract(self):
+        """Reflect on the agent's contracts."""
+        last_memory = self.world.CD_memory[-1]
+        proposer = last_memory['proposer']
+        recent_contract = last_memory['contract_proposed']
+        voting_results = ', '.join([f"{name} voted {'yes' if vote else 'no'}" for name, vote in last_memory['voting_results']])
+        rewards = last_memory['agent_rewards'][self.name]
+        recent_action = last_memory["exec_results"][self.name]
+        contract_enforcement_results = last_memory['contract_enforcement_results']
+        distributed_rewards = last_memory['distributed_rewards']
+
+        beneficial_to_agent = distributed_rewards.get(self.name, 0) >= 0
+        # Get other agents' actions and rewards
+        other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
+
+        if self.name == proposer:
+            if recent_contract:
+                reflection = (
+                    f"You proposed a contract: {recent_contract}. "
+                    f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                    f"Voting results: {voting_results}. "
+                    f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                    f"Other agents' actions and rewards: {other_agents_details}. "
+                    f"Contract enforcement results: {contract_enforcement_results}. "
+                    f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
+                    f"Reflect step by step on your contracting and how could you improve."
+                )
+            else:
+                reflection = (
+                    f"You didn't propose any contract. "
+                    f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                    f"Other agents' actions and rewards: {other_agents_details}. "
+                    f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
+                )
+        else:
+            reflection = (
+                f"You voted on a contract proposed by {proposer}: {'No contract was proposed' if recent_contract is None else recent_contract}. "
+                f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                f"Voting results: {voting_results}. "
+                f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                f"Other agents' actions and rewards: {other_agents_details}. "
+                f"Contract enforcement results: {contract_enforcement_results}. "
+                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "
+                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer."
+            )
+        
+        self.message_history.append(HumanMessage(content=reflection))
+
+        _output = self.chat_model(self.message_history)
+        #print(_output)
+        #print(self.message_history)
+        self.message_history.append(AIMessage(content=_output.content))
+
+    def reflect_on_actions(self):
+        '''
+            Reflect on the agent's actions.
+        '''
+        last_memory = self.world.CD_memory[-1]
+        rewards = last_memory['agent_rewards'][self.name]
+        recent_action = last_memory["exec_results"][self.name]
+
+        # Get other agents' actions and rewards
+        other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
+
+        reflection_template = (
+                f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                f"Other agents' actions and rewards: {other_agents_details}. "
+                #f"The world state is {self.world_state}. "
+                f"Do you think you could have made a better action? How would you have done it? How can you improve in this round? Please reflect on your actions step by step."
+        )
+        # TODO Analyze how you could have improved your rewards and social welfare. This might be RL
+        # potential_reward_improvement = max(last_memory['potential_rewards']) - last_memory['agent_rewards']['self']
+        # reward_improvement = f"You could have improved your rewards by {potential_reward_improvement}." if potential_reward_improvement > 0 else ""
+
+        reflection = reflection_template.format(
+            recent_action=recent_action,
+            #reward_improvement=reward_improvement,
+            reward = rewards,
+        )
+        self.message_history.append(HumanMessage(content=reflection))
+        
+        _output = self.chat_model(self.message_history)
+        self.message_history.append(AIMessage(content=_output.content))
+
 
     def propose_contract(self, contract, scope=3):
         ''' 
@@ -113,11 +198,17 @@ class Agent:
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
-        memory_sentence = ", ".join([f"In round {i}, contract proposed was {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+        memory_sentence = ", ".join([
+            f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
+            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced.") 
+            for i, mem in enumerate(self.world.CD_memory, 1)
+        ]) if self.world.CD_memory != [] else ""
+
+        world_state="\n".join([" | ".join(row) for row in world_state]),
+        local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
+        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         input_prompt = """
-You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
-
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 Here is the world state in your scope:\n
@@ -125,7 +216,8 @@ Here is the world state in your scope:\n
 
 {CD_memory}
 
-Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please reply in the following format and decide the variable X:
+Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step and calculate out the differences between different choices of X in your resoning. 
+Reply in the following format and keep your reasoning into one line:
 ```json
 {{
     “propose_contract”: “TRUE”,
@@ -139,8 +231,6 @@ If you don't want to propose such a contract, please reply in the following form
     “propose_contract”: “FALSE”,
     "reasoning": "TODO",
 }}
-
-Please reason step by step.
 ```
         """.format(
         strategy=self.strategy,
@@ -149,7 +239,7 @@ Please reason step by step.
         x=self.x,
         y=self.y,
         just_collected_apples=self.just_collected_apple,
-        world_state="\n".join([" | ".join(row) for row in world_state]),
+        world_state=world_state_str,
         nearest_agent_coord=nearest_agent_coord,
         nearest_apple_coord=nearest_apple_coord,
         scope=scope,
@@ -166,7 +256,7 @@ Please reason step by step.
             contract_parameter = output['X']
         else:
             contract_proposed = False
-            contract_parameter = {}
+            contract_parameter = {""}
 
         return contract_proposed, contract_parameter
 
@@ -199,13 +289,19 @@ Please reason step by step.
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
-        final_contract = contract.replace("X", contract_parameter)
+        final_contract = contract.replace("X", contract_parameter) if self.world.contract_proposed else ""
 
-        memory_sentence = ", ".join([f"In round {i}, contract proposed was {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}, and contract enforced was {mem['contract_enforced']}." for i, mem in enumerate(self.world.CD_memory, 1)]) if self.world.CD_memory != [] else ""
+        memory_sentence = ", ".join([
+            f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
+            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced.") 
+            for i, mem in enumerate(self.world.CD_memory, 1)
+        ]) if self.world.CD_memory != [] else ""
+
+        world_state="\n".join([" | ".join(row) for row in world_state]),
+        local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
+        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         input_prompt = """
-You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
-
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 Here is the world state in your scope:\n
@@ -213,7 +309,7 @@ Here is the world state in your scope:\n
 
 {CD_memory}
 
-Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format:
+Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
 ```json
 {{
     “agree_contract”: “TRUE”,
@@ -226,14 +322,12 @@ If you don't agree to this contract, please reply in the following format:
     “agree_contract”: “FALSE”,
     "reasoning": "TODO",
 }}
-
-Please reason step by step.
         """.format(
         n_agents=len(agent_details),
         x=self.x,
         y=self.y,
         just_collected_apples=self.just_collected_apple,
-        world_state="\n".join([" | ".join(row) for row in world_state]),
+        world_state=world_state_str,
         nearest_agent_coord=nearest_agent_coord,
         nearest_apple_coord=nearest_apple_coord,
         scope=scope,
@@ -255,7 +349,7 @@ Please reason step by step.
         return voting_result
     
 
-    def get_action(self, contract, contract_parameter, scope=3):
+    def get_action(self, contract, contract_parameter:str, scope=3):
         '''
             Logic for the agent to decide her action
 
@@ -282,23 +376,33 @@ Please reason step by step.
 
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope) 
-        final_contract = contract.replace("X", contract_parameter)
+        final_contract = contract.replace("X", contract_parameter)if self.world.contract_active else ""
         contract_response = "The contract {contract} is voted yes. This contract will be enforced after every agent takes their actions in this round.".format(contract=final_contract) if self.world.contract_active else ["No contract is enforced this round."]
         
+        world_state="\n".join([" | ".join(row) for row in world_state]),
+        local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
+        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+
         input_prompt = """
 {contract_response} Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Currently, the world state is: {world_state}
 
 You can choose one of the following actions:
 - GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.
+    "DIRECTION": [change in X, change in Y]:
+    "UP": [0, -1]
+    "DOWN": [0, 1]
+    "LEFT": [-1, 0]
+    "RIGHT": [1, 0]
 - STAY: soldier will not move and stay at the original location.
 - Collect: Collect the apple in the current grid.
 
 For example:
 "GO down": you will move down the map for 1 grid.
 "STAY": you will just stay at the same location doing nothing.
-"COLLECT": you will collect the apple in the current grid.
+"COLLECT": you will collect 1 apple in the current grid.
 
-Please reason step by step and give a reply in the following format:
+Please reason step by step and give a reply in the following format, keep your reasoning into one line:
 ```json
 {{
     “action”: “TODO”,
@@ -318,6 +422,7 @@ Please reason step by step and give a reply in the following format:
             neighbor_apple=neighbor_apple,
             collected_apples_sentence=collected_apples_sentence,
             contract=final_contract,
+            world_state=world_state_str
         )
 
         self.message_history.append(HumanMessage(content=input_prompt))
@@ -326,8 +431,9 @@ Please reason step by step and give a reply in the following format:
         output = self.call_LLM()
         action = output['action']
         print(self.name, action)
-        # TODO generalize reflection into a func
+        # If the agent is trying to collect an apple but there's no apple in the current grid, prompt the agent to reflect and make a correct decision
         if(action == "COLLECT" and (not self.world.is_apple_at(self.x,self.y))):
+            print("COLLECT on an empty grid - reflect")
             error_prompt="There's no apple for you to collect in your corrent grid. The nearest apple is at {nearest_apple_coord}. Please reflect and make a correct decision.".format(nearest_apple_coord=nearest_apple_coord)
             self.message_history.append(HumanMessage(content=error_prompt))
             output = self.call_LLM()
@@ -348,8 +454,12 @@ Please reason step by step and give a reply in the following format:
         if verbose_input:
             print(f"input_prompt: {self.message_history}")
         _output = self.chat_model(self.message_history)
+        # print("$$$$$$$$$$$$$$$$$$$$ DEBUG $$$$$$$$$$$$$$$$$$$$")
+        # print(_output.content)
         json_string = _output.content.split(
             "```json")[-1].strip().replace('```', '')
+        # print(json_string)
+        # print("$$$$$$$$$$$$$$$$$$$$ END_DEBUG $$$$$$$$$$$$$$$$$$$$")
         try:
             output = json.loads(json_string)
             self.message_history.append(AIMessage(content=json_string))
@@ -368,14 +478,22 @@ Please reason step by step and give a reply in the following format:
                         content=e.__str__())
                 else:
                     error_message = HumanMessage(
-                        content=f"Your output is not in json format. Please make sure your output is in the required json format.")
+                        content=f"Your output is not in json format. Please strictly follow the json format: ```json{{ Your responce according to the prompt template }}``` and remove everything else")
                 self.message_history.append(error_message)
                 self.remaining_retry_times -= 1
 
                 return self.call_LLM()
             else:
-                raise AgentError(
-                    "You have exceeded the maximum number of retries. Please try again later.")
+                error_output_template ='''{
+                            "agree_contract": "FALSE",
+                            "propose_contract": "FALSE",
+                            "action": "STAY",
+                            "reasoning": "NONE"
+                        }'''
+                output = json.loads(error_output_template)
+                print(self.name + " have exceeded the maximum number of retries. A template is used to continue the game.")
+                # raise AgentError(
+                #     "You have exceeded the maximum number of retries. Please try again later.")
 
         if verbose_output:
             pprint(output)
@@ -426,8 +544,10 @@ Please reason step by step and give a reply in the following format:
         self.just_collected_apple = 0
         if "GO" in action:
             _, dir = action.split(" ")
+            dir = dir.upper()
             self._move(dir)
         elif "COLLECT" in action:
             self._collect_apple(self.x, self.y)
         elif "STAY" in action:
             self._stay()
+        return self.name + " " + action
