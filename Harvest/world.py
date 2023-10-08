@@ -27,33 +27,33 @@ class World:
         self.contract_active = False
         self.CD_memory = []
         # Randomly spawn initial apples
-        # for _ in range(num_apples):
-        #     x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
-        #     while self.is_occupied(x, y):
-        #         x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
-        #     self.add_instance(Apple(x, y))
+        for _ in range(num_apples):
+            x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
+            while self.is_occupied(x, y):
+                x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
+            self.add_instance(Apple(x, y))
 
-        self.add_instance(Apple(2, 3))
-        # self.add_instance(Apple(4, 5))
-        self.add_instance(Apple(5, 5))
-        self.add_instance(Apple(1, 10))
-        # self.add_instance(Apple(6, 12))
-        self.add_instance(Apple(9, 9))
-        # self.add_instance(Apple(15, 15))
-        #self.add_instance(Apple(18, 16))
-        self.add_instance(Apple(17, 14))
-        self.add_instance(Apple(19, 3))
+        # self.add_instance(Apple(2, 3))
+        # # self.add_instance(Apple(4, 5))
+        # self.add_instance(Apple(5, 5))
+        # self.add_instance(Apple(1, 10))
+        # # self.add_instance(Apple(6, 12))
+        # self.add_instance(Apple(9, 9))
+        # # self.add_instance(Apple(15, 15))
+        # #self.add_instance(Apple(18, 16))
+        # self.add_instance(Apple(17, 14))
+        # self.add_instance(Apple(19, 3))
 
-        self.add_instance(Apple(3, 18))
-        self.add_instance(Apple(7, 13))
-        self.add_instance(Apple(10, 2))
-        self.add_instance(Apple(11, 11))
-        self.add_instance(Apple(14, 4))
-        # self.add_instance(Apple(16, 15))
-        self.add_instance(Apple(15, 16))
-        self.add_instance(Apple(18, 10))
-        self.add_instance(Apple(9, 1))
-        # self.add_instance(Apple(10, 8))
+        # self.add_instance(Apple(3, 18))
+        # self.add_instance(Apple(7, 13))
+        # self.add_instance(Apple(10, 2))
+        # self.add_instance(Apple(11, 11))
+        # self.add_instance(Apple(14, 4))
+        # # self.add_instance(Apple(16, 15))
+        # self.add_instance(Apple(15, 16))
+        # self.add_instance(Apple(18, 10))
+        # self.add_instance(Apple(9, 1))
+        # # self.add_instance(Apple(10, 8))
 
     def is_occupied(self, x, y):
         if x < 0 or x >= self.x_size or y < 0 or y >= self.y_size:
