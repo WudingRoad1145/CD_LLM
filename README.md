@@ -23,5 +23,7 @@ To set up API keys for this project, follow these steps:
     - [ ] Done with one-shot prompting
 - [ ] Dynamic games
   - [ ] Harvest
-    - [ ] game infra setting up
-    - [ ] prompting tests finished
+    - [ ] Game infra set up
+    - [ ] Prompting tests finished
+    - [ ] CD experiments finished
+    - [ ] Stable gaming outcomes w/ CD

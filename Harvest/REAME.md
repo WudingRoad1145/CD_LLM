@@ -1,6 +1,6 @@
 # Dynamic Game - Harvest 
 ## Start Experimenting
-1. In world.py main change agent, round number, world size, etc settings
+1. In world.py main change agent, round number, world size, scope, etc settings
 2. Run the py file and observe Agents' actions in terminal
 
 # Game Logic
