@@ -213,7 +213,8 @@ Here is the world state in your scope:\n
 
 {CD_memory}
 
-Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Reply in the following format and keep your reasoning into one line:
+Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step and calculate out the differences between different choices of X in your resoning. 
+Reply in the following format and keep your reasoning into one line:
 ```json
 {{
     “propose_contract”: “TRUE”,
@@ -227,8 +228,6 @@ If you don't want to propose such a contract, please reply in the following form
     “propose_contract”: “FALSE”,
     "reasoning": "TODO",
 }}
-
-Please reason step by step and calculate out the differences between different choices of X.
 ```
         """.format(
         strategy=self.strategy,
@@ -287,7 +286,7 @@ Please reason step by step and calculate out the differences between different c
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
-        final_contract = contract.replace("X", contract_parameter)
+        final_contract = contract.replace("X", contract_parameter) if self.world.contract_proposed else ""
 
         memory_sentence = ", ".join([
             f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
@@ -296,8 +295,6 @@ Please reason step by step and calculate out the differences between different c
         ]) if self.world.CD_memory != [] else ""
 
         input_prompt = """
-You are a player in a 2D grid-based world who can move around to collect apples. There are {n_agents} players in total. Everyone wants to collect as many apples as possible. You are perfectly rational and you want to maximize the number of apples you have. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run multiple rounds. 
-
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 Here is the world state in your scope:\n
@@ -305,7 +302,7 @@ Here is the world state in your scope:\n
 
 {CD_memory}
 
-Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format and keep your reasoning into one line:
+Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
 ```json
 {{
     “agree_contract”: “TRUE”,
@@ -318,8 +315,6 @@ If you don't agree to this contract, please reply in the following format:
     “agree_contract”: “FALSE”,
     "reasoning": "TODO",
 }}
-
-Please reason step by step and calculate out the potential gain or loss of agreeing to the contract.
         """.format(
         n_agents=len(agent_details),
         x=self.x,
@@ -374,7 +369,7 @@ Please reason step by step and calculate out the potential gain or loss of agree
 
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope) 
-        final_contract = contract.replace("X", contract_parameter)
+        final_contract = contract.replace("X", contract_parameter)if self.world.contract_active else ""
         contract_response = "The contract {contract} is voted yes. This contract will be enforced after every agent takes their actions in this round.".format(contract=final_contract) if self.world.contract_active else ["No contract is enforced this round."]
         
         input_prompt = """
@@ -382,6 +377,11 @@ Please reason step by step and calculate out the potential gain or loss of agree
 
 You can choose one of the following actions:
 - GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.
+    "DIRECTION": [change in X, change in Y]:
+    "UP": [0, -1]
+    "DOWN": [0, 1]
+    "LEFT": [-1, 0]
+    "RIGHT": [1, 0]
 - STAY: soldier will not move and stay at the original location.
 - Collect: Collect the apple in the current grid.
 
@@ -441,8 +441,12 @@ Please reason step by step and give a reply in the following format, keep your r
         if verbose_input:
             print(f"input_prompt: {self.message_history}")
         _output = self.chat_model(self.message_history)
+        # print("$$$$$$$$$$$$$$$$$$$$ DEBUG $$$$$$$$$$$$$$$$$$$$")
+        # print(_output.content)
         json_string = _output.content.split(
             "```json")[-1].strip().replace('```', '')
+        # print(json_string)
+        # print("$$$$$$$$$$$$$$$$$$$$ END_DEBUG $$$$$$$$$$$$$$$$$$$$")
         try:
             output = json.loads(json_string)
             self.message_history.append(AIMessage(content=json_string))
@@ -461,14 +465,22 @@ Please reason step by step and give a reply in the following format, keep your r
                         content=e.__str__())
                 else:
                     error_message = HumanMessage(
-                        content=f"Your output is not in json format. Please make sure your output is in the required json format.")
+                        content=f"Your output is not in json format. Please strictly follow the json format: ```json{{ Your responce according to the prompt template }}``` and remove everything else")
                 self.message_history.append(error_message)
                 self.remaining_retry_times -= 1
 
                 return self.call_LLM()
             else:
-                raise AgentError(
-                    "You have exceeded the maximum number of retries. Please try again later.")
+                error_output_template ='''{
+                            "agree_contract": "FALSE",
+                            "propose_contract": "FALSE",
+                            "action": "STAY",
+                            "reasoning": "NONE"
+                        }'''
+                output = json.loads(error_output_template)
+                print(self.name + " have exceeded the maximum number of retries. A template is used to continue the game.")
+                # raise AgentError(
+                #     "You have exceeded the maximum number of retries. Please try again later.")
 
         if verbose_output:
             pprint(output)

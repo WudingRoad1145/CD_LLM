@@ -133,4 +133,12 @@ Cao GO UP
 |18|      .   .      .      .      .   .   .   .      .            .    .              .      .      .      .    .  Apple      .      .    .
 |19|      .   .      .      .      .   .   .   .      .            .    .              .      .      .      .    .      .      .      .    .
 **************************************************************************
-[{'round': 0, 'proposer': 'Cao', 'contract_proposed': None, 'voting_results': [('Alice', True), ('Bob', False)], 'exec_results': [{'Alice': 'Alice GO UP'}, {'Bob': 'Bob GO RIGHT'}, {'Cao': 'Cao GO UP'}], 'agent_rewards': {'Alice': 0, 'Bob': 0, 'Cao': 0}, 'contract_enforcement_results': [], 'distributed_rewards': []}]
+[{'round': 0, 
+'proposer': 'Cao', 
+'contract_proposed': None, 
+'voting_results': [('Alice', True), ('Bob', False)], 
+'exec_results': [{'Alice': 'Alice GO UP'}, {'Bob': 'Bob GO RIGHT'}, {'Cao': 'Cao GO UP'}], 
+'agent_rewards': {'Alice': 0, 'Bob': 0, 'Cao': 0}, 
+'contract_enforcement_results': [], 
+'distributed_rewards': []}
+]
