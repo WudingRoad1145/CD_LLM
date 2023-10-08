@@ -39,7 +39,6 @@ class Agent:
         self.remaining_retry_times = max_retry_times
         self.just_collected_apple = 0
         self.id = world.add_instance(self)
-        #self.reflection=Reflection(self.world.CD_memory)
 
     def _get_api_keys(self, custom_key, custom_key_path):
             if custom_key:
@@ -205,6 +204,10 @@ class Agent:
             for i, mem in enumerate(self.world.CD_memory, 1)
         ]) if self.world.CD_memory != [] else ""
 
+        world_state="\n".join([" | ".join(row) for row in world_state]),
+        local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
+        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+
         input_prompt = """
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
@@ -236,7 +239,7 @@ If you don't want to propose such a contract, please reply in the following form
         x=self.x,
         y=self.y,
         just_collected_apples=self.just_collected_apple,
-        world_state="\n".join([" | ".join(row) for row in world_state]),
+        world_state=world_state_str,
         nearest_agent_coord=nearest_agent_coord,
         nearest_apple_coord=nearest_apple_coord,
         scope=scope,
@@ -294,6 +297,10 @@ If you don't want to propose such a contract, please reply in the following form
             for i, mem in enumerate(self.world.CD_memory, 1)
         ]) if self.world.CD_memory != [] else ""
 
+        world_state="\n".join([" | ".join(row) for row in world_state]),
+        local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
+        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+
         input_prompt = """
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
@@ -320,7 +327,7 @@ If you don't agree to this contract, please reply in the following format:
         x=self.x,
         y=self.y,
         just_collected_apples=self.just_collected_apple,
-        world_state="\n".join([" | ".join(row) for row in world_state]),
+        world_state=world_state_str,
         nearest_agent_coord=nearest_agent_coord,
         nearest_apple_coord=nearest_apple_coord,
         scope=scope,
@@ -372,8 +379,13 @@ If you don't agree to this contract, please reply in the following format:
         final_contract = contract.replace("X", contract_parameter)if self.world.contract_active else ""
         contract_response = "The contract {contract} is voted yes. This contract will be enforced after every agent takes their actions in this round.".format(contract=final_contract) if self.world.contract_active else ["No contract is enforced this round."]
         
+        world_state="\n".join([" | ".join(row) for row in world_state]),
+        local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
+        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+
         input_prompt = """
 {contract_response} Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Currently, the world state is: {world_state}
 
 You can choose one of the following actions:
 - GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.
@@ -410,6 +422,7 @@ Please reason step by step and give a reply in the following format, keep your r
             neighbor_apple=neighbor_apple,
             collected_apples_sentence=collected_apples_sentence,
             contract=final_contract,
+            world_state=world_state_str
         )
 
         self.message_history.append(HumanMessage(content=input_prompt))

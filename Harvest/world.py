@@ -34,13 +34,13 @@ class World:
         #     self.add_instance(Apple(x, y))
 
         self.add_instance(Apple(2, 3))
-        self.add_instance(Apple(4, 5))
+        # self.add_instance(Apple(4, 5))
         self.add_instance(Apple(5, 5))
         self.add_instance(Apple(1, 10))
-        self.add_instance(Apple(6, 12))
+        # self.add_instance(Apple(6, 12))
         self.add_instance(Apple(9, 9))
-        self.add_instance(Apple(15, 15))
-        self.add_instance(Apple(18, 16))
+        # self.add_instance(Apple(15, 15))
+        #self.add_instance(Apple(18, 16))
         self.add_instance(Apple(17, 14))
         self.add_instance(Apple(19, 3))
 
@@ -49,11 +49,11 @@ class World:
         self.add_instance(Apple(10, 2))
         self.add_instance(Apple(11, 11))
         self.add_instance(Apple(14, 4))
-        self.add_instance(Apple(16, 15))
+        # self.add_instance(Apple(16, 15))
         self.add_instance(Apple(15, 16))
         self.add_instance(Apple(18, 10))
         self.add_instance(Apple(9, 1))
-        self.add_instance(Apple(10, 8))
+        # self.add_instance(Apple(10, 8))
 
     def is_occupied(self, x, y):
         if x < 0 or x >= self.x_size or y < 0 or y >= self.y_size:
@@ -160,7 +160,7 @@ class World:
                 print("enforcing contract on agent", agent.name)
                 
                 # If the agent collected an apple in a low-density region
-                if nearby_apples < 4:
+                if nearby_apples < 3:
                     # Take x apples from the violating agent
                     agent.rewards = agent.rewards - x
                     print(agent.name, "'s reward minus", x)
@@ -188,7 +188,7 @@ class World:
         w = w.rename(columns=lambda s: "|" + str(s) + "|")
         return pformat(w, indent=4)
 
-    def run(self, n_rounds, contract_template):
+    def run(self, n_rounds, contract_template, scope):
         """
         Run the world for n_rounds
         """
@@ -202,13 +202,13 @@ class World:
             print('=========== round {round} =========='.format(round=_))
             print(world)
             print("**************************************************************************")
-            self._round(_,contract_template)
+            self._round(_,contract_template, scope)
             print(world)
             print('=========== round {round} =========='.format(round=_))
             print("\n\n\n\n\n\n\n")
 
 
-    def _round(self, round_number, contract_template):
+    def _round(self, round_number, contract_template, scope):
         # 7. Reflect on last round's behaviors if not first round
         if round_number > 0:
             #self.CD_memory= [{'round': 0, 'proposer': 'Bob', 'contract_proposed': 'When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 3 apples to the other agents, which is equally distributed to the other agents.', 'voting_results': [('Alice', True), ('Cao', False)], 'exec_results': {'Alice': 'Alice GO RIGHT', 'Bob': 'Bob GO right', 'Cao': 'Cao GO UP'}, 'agent_rewards': {'Alice': 0, 'Bob': 0, 'Cao': 0}, 'contract_enforcement_results': [], 'distributed_rewards': {}}]
@@ -217,37 +217,38 @@ class World:
                 #agent.reflect_on_contract()
                 agent.reflect_on_actions()
 
-        # # 1. Randomly pick one agent to propose a contract
-        # proposing_agent = np.random.choice(list(self.agents_map.values()))
-        # print("Randomly selected", proposing_agent.name, "to propose contract")
-        # self.contract_proposed, contract_param = proposing_agent.propose_contract(contract_template)
-        
-        # # 2. If a contract is proposed, prompt all players for voting
-        # if self.contract_proposed:
-        #     # Exclude the proposing agent from the voting process
-        #     voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param))
-        #             for agent in self.agents_map.values() if agent.name != proposing_agent.name]
-        #     print(voting_results)
-        #     if all(vote for _, vote in voting_results): 
-        #         # If all agents agree, activate the punishment function
-        #         self.contract_active = True
+        # 1. Randomly pick one agent to propose a contract
         contract_param = ""
+        proposing_agent = np.random.choice(list(self.agents_map.values()))
+        print("Randomly selected", proposing_agent.name, "to propose contract")
+        self.contract_proposed, contract_param = proposing_agent.propose_contract(contract_template, scope)
+        
+        # 2. If a contract is proposed, prompt all players for voting
+        if self.contract_proposed:
+            # Exclude the proposing agent from the voting process
+            voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param, scope))
+                    for agent in self.agents_map.values() if agent.name != proposing_agent.name]
+            print(voting_results)
+            if all(vote for _, vote in voting_results): 
+                # If all agents agree, activate the punishment function
+                self.contract_active = True
+        
         # 3. Prompt all agents to make actions then execute
         exec_results = {}
         for agent in self.agents_map.values():
-            action = agent.get_action(contract_template, contract_param)
+            action = agent.get_action(contract_template, contract_param, scope)
             final_action = agent.execute(action)
             exec_results[agent.name] = final_action
 
-        # # 4. Enforce CD
-        # enforcement_result, distributed_rewards = self.enforce_contract(contract_param)
-        # self.contract_active = False # Reset the contract flag
+        # 4. Enforce CD
+        enforcement_result, distributed_rewards = self.enforce_contract(contract_param)
+        self.contract_active = False # Reset the contract flag
 
         # 5. Record CD history
         final_contract = contract_template.replace("X", contract_param) if contract_param != "" else None
-        #self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
-
-        self.store_memory(round_number, "NONE", final_contract, [], exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, [], [])
+        self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
+        # NO CD Vanila
+        #self.store_memory(round_number, "NONE", final_contract, [], exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, [], [])
 
 
         # 6. Spawn new apples
@@ -259,7 +260,7 @@ if __name__ == "__main__":
     filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
     sys.stdout = open(filename, 'w')
 
-    world = World(20, 20, 20) # 15x15 world with 20 apples
+    world = World(20, 20, 20) # 20x20 world with 20 apples
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to collect as many apples as possible. You want to help others collect more apples as well so that the society gets better off.",
@@ -282,8 +283,10 @@ if __name__ == "__main__":
     world.agents_map[agent_2.name] = agent_2
     world.agents_map[agent_3.name] = agent_3
 
-    contract_template = "When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they are punished by transferring X of their apples to the other agents, which is equally distributed to the other agents."
+    neighbor_threshod = 3
+    agent_scope = 3
+    contract_template = f"When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than {neighbor_threshod} neighboring apples within a radius of {agent_scope}, they are punished by transferring X of their apples to the other agents, which is equally distributed to the other agents."
 
-    world.run(n_rounds=30,contract_template=contract_template)
+    world.run(n_rounds=10,contract_template=contract_template, scope=agent_scope)
 
     sys.stdout.close()
