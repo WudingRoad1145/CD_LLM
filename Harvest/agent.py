@@ -16,7 +16,7 @@ class AgentError(Exception):
         super().__init__(message)
 
 class Agent:
-    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0,
+    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0, enable_CD=True, 
                  chat_model: str = 'gpt-4', max_retry_times: int = 5,
                  custom_key: str = None, custom_key_path: str = 'api_key/llm_api_keys.json'):
         self.name = name
@@ -39,6 +39,7 @@ class Agent:
         self.remaining_retry_times = max_retry_times
         self.just_collected_apple = 0
         self.id = world.add_instance(self)
+        self.enable_CD = enable_CD
 
     def _get_api_keys(self, custom_key, custom_key_path):
             if custom_key:
@@ -126,8 +127,8 @@ class Agent:
                 f"Voting results: {voting_results}. "
                 f"Your action last round was {recent_action} and you collected {rewards} apple. "
                 f"Other agents' actions and rewards: {other_agents_details}. "
-                f"Contract enforcement results: {contract_enforcement_results}. "
-                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "
+                f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
+                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
                 f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer."
             )
         
@@ -214,7 +215,7 @@ Currently, you are at grid ({x},{y}). The player closet to you is at grid {neare
 Here is the world state in your scope:\n
 {world_state}
 
-{CD_memory}
+
 
 Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step and calculate out the differences between different choices of X in your resoning. 
 Reply in the following format and keep your reasoning into one line:
@@ -307,7 +308,7 @@ Currently, you are at grid ({x},{y}). The player closet to you is at grid {neare
 Here is the world state in your scope:\n
 {world_state}
 
-{CD_memory}
+
 
 Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
 ```json

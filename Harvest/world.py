@@ -27,15 +27,27 @@ class World:
         self.contract_active = False
         self.CD_memory = []
         # Randomly spawn initial apples
-        for _ in range(num_apples):
-            x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
-            while self.is_occupied(x, y):
-                x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
-            self.add_instance(Apple(x, y))
+        # for _ in range(num_apples):
+        #     x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
+        #     while self.is_occupied(x, y):
+        #         x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
+        #     self.add_instance(Apple(x, y))
 
-        # self.add_instance(Apple(2, 3))
-        # # self.add_instance(Apple(4, 5))
-        # self.add_instance(Apple(5, 5))
+        self.add_instance(Apple(3, 3))
+        self.add_instance(Apple(4, 5))
+        self.add_instance(Apple(10, 12))
+        self.add_instance(Apple(2, 7))
+        self.add_instance(Apple(8, 7))
+        self.add_instance(Apple(3, 9))
+        self.add_instance(Apple(6, 2))
+        self.add_instance(Apple(8, 1))
+        self.add_instance(Apple(7, 6))
+        self.add_instance(Apple(5, 3))
+        self.add_instance(Apple(12, 12))
+        self.add_instance(Apple(13, 3))
+        self.add_instance(Apple(11, 6))
+        self.add_instance(Apple(6, 11))
+        self.add_instance(Apple(1, 13))
         # self.add_instance(Apple(1, 10))
         # # self.add_instance(Apple(6, 12))
         # self.add_instance(Apple(9, 9))
@@ -155,7 +167,7 @@ class World:
         for agent_id, agent in self.agents_map.items():
             enforcement_result = []
             distributed_rewards = {}
-            if agent.just_collected_apple: 
+            if agent.enable_CD and agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y)
                 print("enforcing contract on agent", agent.name)
                 
@@ -214,12 +226,13 @@ class World:
             #self.CD_memory= [{'round': 0, 'proposer': 'Bob', 'contract_proposed': 'When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than 4 neighboring apples within a radius of 5, they transfer 3 apples to the other agents, which is equally distributed to the other agents.', 'voting_results': [('Alice', True), ('Cao', False)], 'exec_results': {'Alice': 'Alice GO RIGHT', 'Bob': 'Bob GO right', 'Cao': 'Cao GO UP'}, 'agent_rewards': {'Alice': 0, 'Bob': 0, 'Cao': 0}, 'contract_enforcement_results': [], 'distributed_rewards': {}}]
             #print(self.CD_memory)
             for agent in self.agents_map.values():
-                #agent.reflect_on_contract()
+                if agent.enable_CD:
+                    agent.reflect_on_contract()
                 agent.reflect_on_actions()
 
         # 1. Randomly pick one agent to propose a contract
         contract_param = ""
-        proposing_agent = np.random.choice(list(self.agents_map.values()))
+        proposing_agent = np.random.choice([agent for agent in self.agents_map.values() if agent.enable_CD])
         print("Randomly selected", proposing_agent.name, "to propose contract")
         self.contract_proposed, contract_param = proposing_agent.propose_contract(contract_template, scope)
         
@@ -227,7 +240,7 @@ class World:
         if self.contract_proposed:
             # Exclude the proposing agent from the voting process
             voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param, scope))
-                    for agent in self.agents_map.values() if agent.name != proposing_agent.name]
+                for agent in self.agents_map.values() if agent.name != proposing_agent.name and agent.enable_CD]
             print(voting_results)
             if all(vote for _, vote in voting_results): 
                 # If all agents agree, activate the punishment function
@@ -260,33 +273,59 @@ if __name__ == "__main__":
     filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
     sys.stdout = open(filename, 'w')
 
-    world = World(20, 20, 20) # 20x20 world with 20 apples
+    world = World(15, 15, 15) # 20x20 world with 20 apples
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to collect as many apples as possible. You want to help others collect more apples as well so that the society gets better off.",
                                  x = 3,
                                  y = 3,
+                                 enable_CD=True,
                                  chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
 
     agent_2 = Agent(world, name="Bob",
                                  strategy="You want to maximize the number of apples you collect. You don't want to overconsume apples because you want to sustainably harvest apples.",
-                                 x = 12,
-                                 y = 16,
+                                 x = 5,
+                                 y = 4,
+                                 enable_CD=True,
                                  chat_model="claude-1.3-100k", custom_key='anthropic_api_key_1')
     agent_3 = Agent(world, name="Cao",
                                  strategy="You want to out-compete others in this harvest game. You don't mind collaborate with others to collect more apples.",
                                  x = 9,
-                                 y = 7,
+                                 y = 3,
+                                 enable_CD=True,
+                                 chat_model="gpt-4", custom_key='openai_api_key_1_wGPT4')
+    agent_4 = Agent(world, name="Dhruv",
+                                 strategy="You want to maximize the number of apples you collect.",
+                                 x = 7,
+                                 y = 8,
+                                 enable_CD=False,
                                  chat_model="gpt-4", custom_key='openai_api_key_1_wGPT4')
 
+    agent_5 = Agent(world, name="Eli",
+                                 strategy="You want to maximize the number of apples you collect.",
+                                 x = 3,
+                                 y = 6,
+                                 enable_CD=False,
+                                 chat_model="gpt-4", custom_key='openai_api_key_1_wGPT4')
+    
+    agent_6 = Agent(world, name="Saida",
+                                 strategy="You want to maximize the number of apples you collect.",
+                                 x = 12,
+                                 y = 4,
+                                 enable_CD=False,
+                                 chat_model="gpt-4", custom_key='openai_api_key_1_wGPT4')
+    
     world.agents_map[agent_1.name] = agent_1
     world.agents_map[agent_2.name] = agent_2
     world.agents_map[agent_3.name] = agent_3
+    world.agents_map[agent_4.name] = agent_4
+    world.agents_map[agent_4.name] = agent_5
+    world.agents_map[agent_4.name] = agent_6
 
     neighbor_threshod = 3
     agent_scope = 3
     contract_template = f"When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than {neighbor_threshod} neighboring apples within a radius of {agent_scope}, they are punished by transferring X of their apples to the other agents, which is equally distributed to the other agents."
 
-    world.run(n_rounds=10,contract_template=contract_template, scope=agent_scope)
+    world.run(n_rounds=30,contract_template=contract_template, scope=agent_scope)
 
     sys.stdout.close()
