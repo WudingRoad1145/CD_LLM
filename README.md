@@ -27,3 +27,9 @@ To set up API keys for this project, follow these steps:
     - [ ] Prompting tests finished
     - [ ] CD experiments finished
     - [ ] Stable gaming outcomes w/ CD
+    - [ ] Experiments
+      - [ ] Variation in map size
+      - [ ] Variation in number of agents
+      - [ ] Agent's scope in viewing the game
+      - [ ] Some agents with CD enabled, some without - currently half half
+      - [ ] Change contracting to P2P instead of global

@@ -1,0 +1,4 @@
+anthropic==0.3.11 
+langchain==0.0.312 
+numpy==1.25.2 
+pandas==2.1.1
