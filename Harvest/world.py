@@ -27,7 +27,6 @@ class World:
         self.contract_active = False
         self.CD_memory = []
         self.remaining_apple = num_apples
-        self.end_game = False
         # Randomly spawn initial apples
         for _ in range(num_apples):
             x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
@@ -275,7 +274,7 @@ class World:
         # NO CD Vanila
         #self.store_memory(round_number, "NONE", final_contract, [], exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, [], [])
 
-        # Apple Check - if there's no apple around, change flag world.end_game to True - end game'
+        # Apple Check - if there's no apple around, call end_game func'
         if self.remaining_apple == 0:
             self.end_game()
 
