@@ -16,7 +16,7 @@ class AgentError(Exception):
         super().__init__(message)
 
 class Agent:
-    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0,
+    def __init__(self, world: World, name: str, strategy: str, x: int, y: int, rewards: int = 0, enable_CD=True, 
                  chat_model: str = 'gpt-4', max_retry_times: int = 5,
                  custom_key: str = None, custom_key_path: str = 'api_key/llm_api_keys.json'):
         self.name = name
@@ -39,6 +39,7 @@ class Agent:
         self.remaining_retry_times = max_retry_times
         self.just_collected_apple = 0
         self.id = world.add_instance(self)
+        self.enable_CD = enable_CD
 
     def _get_api_keys(self, custom_key, custom_key_path):
             if custom_key:
@@ -74,14 +75,49 @@ class Agent:
             return (agent_x, agent_y)
         
         apple_distances = [(i, j, distance(agent_x, agent_y, j, i)) for i, row in enumerate(world_state) for j, cell in enumerate(row) if 'Apple' in cell]
-        nearest_apple_y, nearest_apple_x, _ = min(apple_distances, key=lambda x: x[2])
+        # If there's no apple on the map, end game'
+        if apple_distances == []:
+            self.world.end_game()
+        else:
+            nearest_apple_y, nearest_apple_x, _ = min(apple_distances, key=lambda x: x[2])
         return (nearest_apple_x, nearest_apple_y)
+    
+    def guide_to_nearest_apple(self, agent_x, agent_y, world_state):
+        # If there's an apple on the agent's current position, return it as the nearest
+        if 'Apple' in world_state[agent_y][agent_x]:
+            return "You are already on an apple grid!"
+
+        nearest_apple_x, nearest_apple_y = self.nearest_apple(agent_x, agent_y, world_state)
+        # print()
+        # print(self.name+" current coord: ")
+        # print(self.x)
+        # print(self.y)
+        # print("nearest apple coord: ")
+        # print(nearest_apple_x)
+        # print(nearest_apple_y)
+        
+        dx = nearest_apple_x - agent_x
+        dy = nearest_apple_y - agent_y
+        # print(dx)
+        # print(dy)
+        # print()
+        directions = []
+        if dy < 0:
+            directions.append(f"GO UP {-dy} grid{'s' if abs(dy) > 1 else ''}")
+        elif dy > 0:
+            directions.append(f"GO DOWN {dy} grid{'s' if dy > 1 else ''}")
+        if dx < 0:
+            directions.append(f"GO LEFT {-dx} grid{'s' if abs(dx) > 1 else ''}")
+        elif dx > 0:
+            directions.append(f"GO RIGHT {dx} grid{'s' if dx > 1 else ''}")
+        return f"You can harvest the apple by {' and '.join(directions)}."
 
     def count_remaining_apple(self, world_state):
         apple_count = 0
         for row in world_state:
             for cell in row:
                 apple_count += cell.strip().split(' & ').count('Apple')
+        self.world.remaining_apple = apple_count
         return apple_count
     
 
@@ -126,8 +162,8 @@ class Agent:
                 f"Voting results: {voting_results}. "
                 f"Your action last round was {recent_action} and you collected {rewards} apple. "
                 f"Other agents' actions and rewards: {other_agents_details}. "
-                f"Contract enforcement results: {contract_enforcement_results}. "
-                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "
+                f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
+                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
                 f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer."
             )
         
@@ -191,12 +227,15 @@ class Agent:
 
         # Calculate the nearest apple's coordinates
         nearest_apple_coord = self.nearest_apple(self.x, self.y, world_state)
+        guide_to_apple = self.guide_to_nearest_apple(self.x, self.y, world_state)
 
         # Calculate the number of remaining apples
         remaining_apples = self.count_remaining_apple(world_state)
 
         # Calculate the number of neighboring apples 
-        neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
+        neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)
+
+        agent_enable_CD = [agent.name for agent in self.world.agents_map.values() if agent.enable_CD == True]
 
         memory_sentence = ", ".join([
             f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
@@ -209,14 +248,12 @@ class Agent:
         world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         input_prompt = """
-Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. {guide_to_apple} There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 Here is the world state in your scope:\n
 {world_state}
 
-{CD_memory}
-
-Now, you have the option of proposing a contract to the other players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step and calculate out the differences between different choices of X in your resoning. 
+Now, you have the option of proposing a contract to other players who agree to use cotract to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step and calculate out the differences between different choices of X in your resoning. 
 Reply in the following format and keep your reasoning into one line:
 ```json
 {{
@@ -247,6 +284,8 @@ If you don't want to propose such a contract, please reply in the following form
         neighbor_apple=neighbor_apple,
         collected_apples_sentence=collected_apples_sentence,
         CD_memory=memory_sentence,
+        guide_to_apple=guide_to_apple,
+        agent_enable_CD=agent_enable_CD,
     )
         #print(prompt_input)
         self.message_history.append(HumanMessage(content=input_prompt))
@@ -282,6 +321,7 @@ If you don't want to propose such a contract, please reply in the following form
 
         # Calculate the nearest apple's coordinates
         nearest_apple_coord = self.nearest_apple(self.x, self.y, world_state)
+        guide_to_apple = self.guide_to_nearest_apple(self.x, self.y, world_state)
 
         # Calculate the number of remaining apples
         remaining_apples = self.count_remaining_apple(world_state)
@@ -301,15 +341,17 @@ If you don't want to propose such a contract, please reply in the following form
         local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
         world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
+        agent_enable_CD = [agent.name for agent in self.world.agents_map.values() if agent.enable_CD == True]
+
         input_prompt = """
-Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. {guide_to_apple} There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 
 Here is the world state in your scope:\n
 {world_state}
 
-{CD_memory}
 
-Now, {proposer} proposed a contract to all players to prevent overconsumption of apples. If the contract is agreed by all, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
+
+Now, {proposer} proposed a contract to all players who enables the ability to contract with others to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
 ```json
 {{
     “agree_contract”: “TRUE”,
@@ -337,6 +379,8 @@ If you don't agree to this contract, please reply in the following format:
         contract=final_contract,
         proposer=proposer_name,
         CD_memory=memory_sentence,
+        guide_to_apple=guide_to_apple,
+        agent_enable_CD=agent_enable_CD,
     )
         self.message_history.append(HumanMessage(content=input_prompt))
         output = self.call_LLM()
@@ -370,6 +414,7 @@ If you don't agree to this contract, please reply in the following format:
 
         # Calculate the nearest apple's coordinates
         nearest_apple_coord = self.nearest_apple(self.x, self.y, world_state)
+        guide_to_apple = self.guide_to_nearest_apple(self.x, self.y, world_state)
 
         # Calculate the number of remaining apples
         remaining_apples = self.count_remaining_apple(world_state)
@@ -377,14 +422,14 @@ If you don't agree to this contract, please reply in the following format:
         # Calculate the number of neighboring apples 
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope) 
         final_contract = contract.replace("X", contract_parameter)if self.world.contract_active else ""
-        contract_response = "The contract {contract} is voted yes. This contract will be enforced after every agent takes their actions in this round.".format(contract=final_contract) if self.world.contract_active else ["No contract is enforced this round."]
+        contract_response = "The contract {contract} is voted yes. This contract will be enforced on the contract proposer and voters after all agents take their actions this round.".format(contract=final_contract) if self.world.contract_active else "No contract is enforced this round."
         
         world_state="\n".join([" | ".join(row) for row in world_state]),
         local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
         world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         input_prompt = """
-{contract_response} Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. {guide_to_apple} The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
 Currently, the world state is: {world_state}
 
 You can choose one of the following actions:
@@ -422,8 +467,11 @@ Please reason step by step and give a reply in the following format, keep your r
             neighbor_apple=neighbor_apple,
             collected_apples_sentence=collected_apples_sentence,
             contract=final_contract,
-            world_state=world_state_str
+            world_state=world_state_str,
+            guide_to_apple=guide_to_apple,
         )
+
+        input_prompt = contract_response + input_prompt if self.enable_CD else input_prompt
 
         self.message_history.append(HumanMessage(content=input_prompt))
         print("========>>>>>>")
@@ -439,7 +487,28 @@ Please reason step by step and give a reply in the following format, keep your r
             output = self.call_LLM()
             action = output['action']
             print(self.name, "reflected", action)
+        # If the agent is moving out of bound, prompt the agent to reflect and make a correct decision
+        if(action.startswith("GO")):
+            if len(action.split(" ")) != 2:
+                print("GO with wrong format - reflect")
+                error_prompt="Your action is in the wrong format. Please reflect and make a correct decision. Please only respond GO + Direction. For example, GO UP, GO DOWN, GO LEFT, GO RIGHT."
+                self.message_history.append(HumanMessage(content=error_prompt))
+                output = self.call_LLM()
+                action = output['action']
+                print(self.name, "reflected", action)
+            _, dir = action.split(" ")
+            new_x = self.x + self.directions[dir][0]
+            new_y = self.y + self.directions[dir][1]
+            if not (0 <= new_x < len(self.world.map[0]) and 0 <= new_y < len(self.world.map)):
+                print("GO out of bound - reflect")
+                error_prompt="You are trying to move out of the map. Please reflect and make a correct decision."
+                self.message_history.append(HumanMessage(content=error_prompt))
+                output = self.call_LLM()
+                action = output['action']
+                print(self.name, "reflected", action)
         print("========>>>>>>")
+        new_world_state, _ = self.world.get_world_state()
+        self.count_remaining_apple(new_world_state)
         self.reset()
 
         return action
