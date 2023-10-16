@@ -24,7 +24,7 @@ class World:
         self.name_to_id = {}
         self.global_id = 0
         self.contract_proposed = False
-        #self.contract_active = False
+        self.contract_active = False
         self.CD_memory = []
         self.remaining_apple = num_apples
         # Randomly spawn initial apples
@@ -150,54 +150,47 @@ class World:
                         count += 1
         return count
     
-    def store_memory(self, round, contracts, exec_results, agent_rewards, contract_enforced, distributed_rewards):
+    def store_memory(self, round, proposer, final_contract, voting_results, exec_results, agent_rewards, contract_enforced, distributed_rewards):
         # Record historical data in memory
         self.CD_memory.append({
             'round': round,
-            'contracts': contracts,
+            'proposer': proposer,
+            'contract_proposed': final_contract,
+            'voting_results': voting_results,
             'exec_results': exec_results,
             'agent_rewards': agent_rewards,
             'contract_enforcement_results': contract_enforced,
             "distributed_rewards": distributed_rewards
         })
     
-    # P2P contracting mode: enforce contract for each agent
-    def enforce_contract(self,neighbor_threshold):
-        enforcement_results = []
-        distributed_rewards = {}
-
-        # Check each agent to see if they violated any of their contracts
+    def enforce_contract(self, contract_param, neighbor_threshod):
+        x = float(contract_param)  # The number of apples to be transferred
+        
+        # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
-            if agent.enable_CD and agent.just_collected_apple:
+            enforcement_result = []
+            distributed_rewards = {}
+            if agent.enable_CD and agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y)
-                print("Checking contract for agent", agent.name)
-
+                print("enforcing contract on agent", agent.name)
+                
                 # If the agent collected an apple in a low-density region
-                if nearby_apples < neighbor_threshold:
-                    for contract in agent.current_contracts.values():
-                        if(contract["passed"]):
-                            x = float(contract['param'])  # The number of apples to be transferred
-                            target_agents = contract['targets']
-
-                            # Take x apples from the violating agent
-                            agent.rewards -= x
-                            print(agent.name, "'s reward minus", x)
-
-                            # Distribute the penalty among the agents involved in the contract who have enable_CD set to True
-                            valid_target_agents = [name for name in target_agents if self.agents_map[name].enable_CD]
-                            if not valid_target_agents:  # If no valid target agents, skip this contract
-                                continue
-                            apples_per_agent = x / len(valid_target_agents)
-
-                            for target_agent_name in valid_target_agents:
-                                target_agent = self.agents_map[target_agent_name]
-                                target_agent.rewards += apples_per_agent
-                                distributed_rewards[target_agent_name] = apples_per_agent
-
-                            enforcement_results.append(f"{agent.name} violated the contract with {', '.join(valid_target_agents)}. {x} apples were taken from {agent.name} and distributed among the contract participants.")
-                            distributed_rewards[agent.name] = -x
-
-        return enforcement_results, distributed_rewards
+                if nearby_apples < neighbor_threshod:
+                    # Take x apples from the violating agent
+                    agent.rewards = agent.rewards - x
+                    print(agent.name, "'s reward minus", x)
+                    
+                    # Count the number of other agents who use CD
+                    num_other_agents = sum(1 for other_agent in self.agents_map.values() if other_agent.enable_CD and other_agent != agent)
+                    apples_per_agent = x / num_other_agents
+                    for other_agent_id, other_agent in self.agents_map.items():
+                        if other_agent_id != agent_id and other_agent.enable_CD:
+                            other_agent.rewards += apples_per_agent
+                            distributed_rewards[other_agent.name] = apples_per_agent
+                    enforcement_result.append(f"{agent.name} violated the contract. {x} apples were taken from {agent.name} and distributed to other agents who agreed using contracting.")
+                    distributed_rewards[agent.name] = -x
+        
+        return enforcement_result, distributed_rewards
 
 
     def __repr__(self):
@@ -248,44 +241,21 @@ class World:
                     agent.reflect_on_contract()
                 agent.reflect_on_actions()
 
-        # 1.1 global contracting mode: Randomly pick one agent to propose a contract
-        # contract_param = ""
-        # proposing_agent = np.random.choice([agent for agent in self.agents_map.values() if agent.enable_CD])
-        # print("Randomly selected", proposing_agent.name, "to propose contract")
-        # self.contract_proposed, contract_param = proposing_agent.propose_contract(contract_template, scope)
-        # 1.2 P2P contracting mode: every agent can decide whether to propose a contract and to whom they wanna propose
+        # 1. Randomly pick one agent to propose a contract
         contract_param = ""
-        for agent in self.agents_map.values():
-            if agent.enable_CD == True:
-                contract_proposed, contract_param, target_agents = agent.propose_contract(contract_template, scope)
-                if contract_proposed:
-                    agent.contract_proposed = True
-                    # 2.2 P2P contracting mode: If agent in target_agents, prompt them for voting
-                    voting_results = []
-                    for target_agent_name in target_agents:
-                        target_agent = self.agents_map[target_agent_name]
-                        if target_agent.enable_CD:
-                            vote = target_agent.vote_on_contract(agent.name, contract_template, contract_param, target_agents, scope)
-                            voting_results.append((target_agent_name, vote))
-                            print(agent.name, "proposed contract to", target_agent_name, "and the vote was", vote)
-
-                    print(voting_results)
-                    # If all target agents agree, activate the contract for those agents
-                    if all(vote for _, vote in voting_results): 
-                        for target_agent_name in target_agents:
-                            self.agents_map[target_agent_name].update_current_contract(agent.name, contract_param, target_agents, True, voting_results)
-                        self.agents_map[agent.name].update_current_contract(agent.name, contract_param, target_agents, True, voting_results)
-                    else:
-                        self.agents_map[agent.name].update_current_contract(agent.name, contract_param, target_agents, False, voting_results)
-        # 2.1 global contracting mode: If a contract is proposed, prompt all players for voting
-        # if self.contract_proposed:
-        #     # Exclude the proposing agent from the voting process
-        #     voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param, scope))
-        #         for agent in self.agents_map.values() if agent.name != proposing_agent.name and agent.enable_CD]
-        #     print(voting_results)
-        #     if all(vote for _, vote in voting_results): 
-        #         # If all agents agree, activate the punishment function
-        #         self.contract_active = True
+        proposing_agent = np.random.choice([agent for agent in self.agents_map.values() if agent.enable_CD])
+        print("Randomly selected", proposing_agent.name, "to propose contract")
+        self.contract_proposed, contract_param = proposing_agent.propose_contract(contract_template, scope)
+        
+        # 2. If a contract is proposed, prompt all players for voting
+        if self.contract_proposed:
+            # Exclude the proposing agent from the voting process
+            voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param, scope))
+                for agent in self.agents_map.values() if agent.name != proposing_agent.name and agent.enable_CD]
+            print(voting_results)
+            if all(vote for _, vote in voting_results): 
+                # If all agents agree, activate the punishment function
+                self.contract_active = True
         
         # 3. Prompt all agents to make actions then execute
         exec_results = {}
@@ -295,32 +265,14 @@ class World:
             exec_results[agent.name] = final_action
 
         # 4. Enforce CD
-        enforcement_result, distributed_rewards = self.enforce_contract(neighbor_threshod)
-        #self.contract_active = False # Reset the contract flag
+        enforcement_result, distributed_rewards = self.enforce_contract(contract_param, neighbor_threshod)
+        self.contract_active = False # Reset the contract flag
 
-        # 5.1 Record CD history
-        # final_contract = contract_template.replace("X", contract_param) if contract_param != "" else None
-        # self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
-        # # 5.2 NO CD Vanila version
+        # 5. Record CD history
+        final_contract = contract_template.replace("X", contract_param) if contract_param != "" else None
+        self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
+        # NO CD Vanila
         #self.store_memory(round_number, "NONE", final_contract, [], exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, [], [])
-        # 5.3 P2P mode
-        contracts = []
-        for agent in self.agents_map.values():
-            if agent.contract_proposed:
-                final_contract = contract_template.replace("X", agent.current_contracts[agent.name]["param"]) if agent.current_contracts[agent.name] else None
-                contracts.append({
-                    'proposer': agent.name,
-                    'final_contract': final_contract,
-                    'passed': agent.current_contracts[agent.name]["passed"],
-                    'voting_results': agent.current_contracts[agent.name]["votes"],
-                    'target_agents': agent.current_contracts[agent.name]["targets"]
-                })
-        self.store_memory(round_number, contracts, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
-
-        # Clear active CD for all agents
-        for agent in self.agents_map.values():
-            agent.current_contracts = {}
-            agent.contract_proposed = False
 
         # Apple Check - if there's no apple around, call end_game func'
         if self.remaining_apple == 0:
@@ -342,7 +294,7 @@ if __name__ == "__main__":
                                  x = 2,
                                  y = 2,
                                  enable_CD=True,
-                                 chat_model="gpt-4", custom_key='openai_api_key_1_wGPT4')
+                                 chat_model="gpt-4-0613", custom_key='openai_api_key_1_wGPT4')
 
     agent_2 = Agent(world, name="Bob",
                                  strategy="You want to maximize the number of apples you collect. You don't want to overconsume apples because you want to sustainably harvest apples.",
@@ -385,7 +337,7 @@ if __name__ == "__main__":
     world.agents_map[agent_6.name] = agent_6
 
     neighbor_threshod = 3
-    agent_scope = 10
+    agent_scope = 3
     contract_template = f"When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than {neighbor_threshod} neighboring apples within a radius of {agent_scope}, they are punished by transferring X of their apples to the other agents who agree using contracting. X apples will be equally distributed to these agents."
 
     world.run(n_rounds=20,contract_template=contract_template, scope=agent_scope, neighbor_threshod=neighbor_threshod)
