@@ -117,7 +117,8 @@ class World:
         return id
 
     def spawn_probability(self, nearby_apples):
-        return [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
+        #return [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
+        return [0, 0.0025, 0.01, 0.025][min(nearby_apples, 3)]
         #return [0, 0.001, 0.004, 0.01][min(nearby_apples, 3)]
 
     def spawn_apples(self):
@@ -244,7 +245,9 @@ class World:
             for agent in self.agents_map.values():
                 if agent.enable_CD:
                     agent.reflect_on_contract()
+                    agent.ToM_reflect()
                 agent.reflect_on_actions()
+                agent.ToM_reflect()
 
         # 1. Randomly pick one agent to propose a contract
         contract_param = ""
@@ -266,6 +269,9 @@ class World:
         exec_results = {}
         for agent in self.agents_map.values():
             action = agent.get_action(contract_template, contract_param, scope)
+            if round_number > 0:
+                agent.ToM_reflect(action_flag=True)
+                action = agent.get_action(contract_template, contract_param, scope)
             final_action = agent.execute(action)
             exec_results[agent.name] = final_action
 
@@ -299,25 +305,31 @@ if __name__ == "__main__":
                                  x = 2,
                                  y = 2,
                                  enable_CD=True,
-                                 chat_model="gpt-4-0613", custom_key='openai_api_key_1')
+                                 #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_1')
+                                 chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_2 = Agent(world, name="Bob",
                                  strategy="You want to maximize the number of apples you collect. You don't want to overconsume apples because you want to sustainably harvest apples.",
                                  x = 5,
                                  y = 4,
                                  enable_CD=True,
-                                 chat_model="gpt-4", custom_key='openai_api_key_2')
+                                 #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_2')
+                                 chat_model="gpt-4", custom_key='openai_api_key_1')
+
     agent_3 = Agent(world, name="Cao",
                                  strategy="You want to out-compete others in this harvest game. You don't mind collaborate with others to collect more apples.",
                                  x = 3,
                                  y = 8,
                                  enable_CD=True,
-                                 chat_model="gpt-4", custom_key='openai_api_key_3')
+                                 #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_3')
+                                 chat_model="gpt-4", custom_key='openai_api_key_1')
+
     agent_4 = Agent(world, name="Dhruv",
                                  strategy="You want to maximize the number of apples you collect.",
                                  x = 7,
                                  y = 8,
                                  enable_CD=False,
+                                 #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_1')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_5 = Agent(world, name="Eli",
@@ -325,15 +337,17 @@ if __name__ == "__main__":
                                  x = 3,
                                  y = 6,
                                  enable_CD=False,
-                                 chat_model="gpt-4", custom_key='openai_api_key_2')
-    
+                                 #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_2')
+                                 chat_model="gpt-4", custom_key='openai_api_key_1')
+
     agent_6 = Agent(world, name="Saida",
                                  strategy="You are perfectly rational and want to collect more apples than others.",
                                  x = 7,
                                  y = 4,
                                  enable_CD=False,
-                                 chat_model="gpt-4", custom_key='openai_api_key_3')
-    
+                                 #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_3')
+                                 chat_model="gpt-4", custom_key='openai_api_key_1')
+
     world.agents_map[agent_1.name] = agent_1
     world.agents_map[agent_2.name] = agent_2
     world.agents_map[agent_3.name] = agent_3

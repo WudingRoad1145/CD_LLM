@@ -121,6 +121,34 @@ class Agent:
         return apple_count
     
 
+    def ToM_reflect(self, action_flag=False):
+        """Using Theory of Mind to predict other agents' actions."""
+        # Getting the player names for the template
+        player_strategies = [
+            f'    "{agent.name}": "TODO",\n    "{agent.name}\'s potential_strategy": "TODO"'
+            for agent in self.world.agents_map.values()
+            if agent.name != self.name
+        ]
+        player_strategies_str = ',\n'.join(player_strategies)
+
+        ToM = f"""Please analyze the decisions made by other players and deduce what these decisions suggest about their strategies. How can you leverage this understanding to your advantage? Given the potential actions of other agents, what strategy and actions would you consider to maximize your position? Please provide your reasoning step by step in the following format:
+        ```json
+{{
+{player_strategies_str},
+    "improved_strategy": "TODO",
+    "improved_action": "TODO",
+    "reasoning": "TODO",
+}}
+        """
+        if action_flag:
+            ToM = ToM+"\n Notice that you can only choose from GO [UP/DOWN/LEFT/RIGHT], STAY, and COLLECT"
+        self.message_history.append(HumanMessage(content=ToM))
+        _output = self.chat_model(self.message_history)
+        self.message_history.append(AIMessage(content=_output.content))
+        print()
+        print(self.name, "<ToM> : ", _output.content)
+        print()
+
     def reflect_on_contract(self):
         """Reflect on the agent's contracts."""
         last_memory = self.world.CD_memory[-1]
@@ -148,8 +176,7 @@ class Agent:
                     f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
                     f"Reflect step by step on your contracting and how could you improve. "
                 )
-                    #f"Reflect on the voting results from the voter's perspective - why that agent would vote yes/no in his/her given scenario? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
-                
+
             else:
                 reflection = (
                     f"You didn't propose any contract. "
@@ -157,8 +184,7 @@ class Agent:
                     f"Other agents' actions and rewards: {other_agents_details}. "
                     f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
                 )
-                    #f" What you think other agents would have done? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
-                
+
         else:
             reflection = (
                 f"You voted on a contract proposed by {proposer}: {'No contract was proposed' if recent_contract is None else recent_contract}. "
@@ -170,14 +196,12 @@ class Agent:
                 f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
                 f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. "
             )
-                #f"Please also reflect on the decisions of other voters and think about how that insinuates his/her strategy. How can you use this information to your advantage?"
-            
+
         
         self.message_history.append(HumanMessage(content=reflection))
 
         _output = self.chat_model(self.message_history)
-        #print(_output)
-        #print(self.message_history)
+
         self.message_history.append(AIMessage(content=_output.content))
 
     def reflect_on_actions(self):
@@ -196,8 +220,6 @@ class Agent:
                 f"Other agents' actions and rewards: {other_agents_details}. "
                 #f"The world state is {self.world_state}. "
                 f"Do you think you could have made a better action? How would you have done it? How can you improve in this round? Please reflect on your actions step by step."
-                f"Please also reflect on the actions of other players and think about how that insinuates his/her strategy. How can you use this information to your advantage?"
-            
         )
         # TODO Analyze how you could have improved your rewards and social welfare. This might be RL
         # potential_reward_improvement = max(last_memory['potential_rewards']) - last_memory['agent_rewards']['self']
@@ -209,7 +231,6 @@ class Agent:
             reward = rewards,
         )
         self.message_history.append(HumanMessage(content=reflection))
-        
         _output = self.chat_model(self.message_history)
         self.message_history.append(AIMessage(content=_output.content))
 
@@ -455,7 +476,6 @@ For example:
 "STAY": you will just stay at the same location doing nothing.
 "COLLECT": you will collect 1 apple in the current grid.
 
-Think about how other players might take action and how that insinuates his/her strategy. How can you use this information to your advantage?
 Please reason step by step and give a reply in the following format, keep your reasoning into one line:
 ```json
 {{
@@ -483,7 +503,7 @@ Please reason step by step and give a reply in the following format, keep your r
         input_prompt = contract_response + input_prompt if self.enable_CD else input_prompt
 
         self.message_history.append(HumanMessage(content=input_prompt))
-        print("========>>>>>>")
+
         print(self.name, self.message_history)
         output = self.call_LLM()
         action = output['action']
@@ -515,7 +535,7 @@ Please reason step by step and give a reply in the following format, keep your r
                 output = self.call_LLM()
                 action = output['action']
                 print(self.name, "reflected", action)
-        print("========>>>>>>")
+
         new_world_state, _ = self.world.get_world_state()
         self.count_remaining_apple(new_world_state)
         self.reset()
@@ -532,12 +552,10 @@ Please reason step by step and give a reply in the following format, keep your r
         if verbose_input:
             print(f"input_prompt: {self.message_history}")
         _output = self.chat_model(self.message_history)
-        # print("$$$$$$$$$$$$$$$$$$$$ DEBUG $$$$$$$$$$$$$$$$$$$$")
         # print(_output.content)
         json_string = _output.content.split(
             "```json")[-1].strip().replace('```', '')
         # print(json_string)
-        # print("$$$$$$$$$$$$$$$$$$$$ END_DEBUG $$$$$$$$$$$$$$$$$$$$")
         try:
             output = json.loads(json_string)
             self.message_history.append(AIMessage(content=json_string))
