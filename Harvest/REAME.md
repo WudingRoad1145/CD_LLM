@@ -45,6 +45,10 @@
    7. Env check(spwan apple, check if game ends(no apple remaining), clear agent current_contract history)
 3. Round ends
 
+## Prompting Techniques
+1. CoT - chain of thoughts - referring to Jason Wei
+2. ToM
+
 ## Design choices
 1. Removed orientation from the initial game as LLM agents are not good at spatial reasoning.
 2. Using Unanimity voting for now.

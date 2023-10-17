@@ -146,15 +146,19 @@ class Agent:
                     f"Other agents' actions and rewards: {other_agents_details}. "
                     f"Contract enforcement results: {contract_enforcement_results}. "
                     f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
-                    f"Reflect step by step on your contracting and how could you improve. Reflect on the voting results from the voter's perspective - why that agent would vote yes/no in his/her given scenario? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+                    f"Reflect step by step on your contracting and how could you improve. "
                 )
+                    #f"Reflect on the voting results from the voter's perspective - why that agent would vote yes/no in his/her given scenario? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+                
             else:
                 reflection = (
                     f"You didn't propose any contract. "
                     f"Your action last round was {recent_action} and you collected {rewards} apple. "
                     f"Other agents' actions and rewards: {other_agents_details}. "
-                    f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation. What you think other agents would have done? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+                    f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
                 )
+                    #f" What you think other agents would have done? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+                
         else:
             reflection = (
                 f"You voted on a contract proposed by {proposer}: {'No contract was proposed' if recent_contract is None else recent_contract}. "
@@ -164,8 +168,10 @@ class Agent:
                 f"Other agents' actions and rewards: {other_agents_details}. "
                 f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
                 f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
-                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. Please also reflect on the decisions of other voters and think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. "
             )
+                #f"Please also reflect on the decisions of other voters and think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+            
         
         self.message_history.append(HumanMessage(content=reflection))
 
@@ -190,6 +196,8 @@ class Agent:
                 f"Other agents' actions and rewards: {other_agents_details}. "
                 #f"The world state is {self.world_state}. "
                 f"Do you think you could have made a better action? How would you have done it? How can you improve in this round? Please reflect on your actions step by step."
+                f"Please also reflect on the actions of other players and think about how that insinuates his/her strategy. How can you use this information to your advantage?"
+            
         )
         # TODO Analyze how you could have improved your rewards and social welfare. This might be RL
         # potential_reward_improvement = max(last_memory['potential_rewards']) - last_memory['agent_rewards']['self']
@@ -245,7 +253,7 @@ class Agent:
 
         world_state="\n".join([" | ".join(row) for row in world_state]),
         local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
-        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+        local_world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         input_prompt = """
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. {guide_to_apple} There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
@@ -253,7 +261,7 @@ Currently, you are at grid ({x},{y}). The player closet to you is at grid {neare
 Here is the world state in your scope:\n
 {world_state}
 
-Now, you have the option of proposing a contract to other players who agree to use cotract to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step and calculate out the differences between different choices of X in your resoning. 
+Now, you have the option of proposing a contract to other players who agree to use cotract to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. Some agents are not enabled to use contracts and will not vote or follow the contract. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step. 
 Reply in the following format and keep your reasoning into one line:
 ```json
 {{
@@ -276,7 +284,7 @@ If you don't want to propose such a contract, please reply in the following form
         x=self.x,
         y=self.y,
         just_collected_apples=self.just_collected_apple,
-        world_state=world_state_str,
+        world_state=world_state,
         nearest_agent_coord=nearest_agent_coord,
         nearest_apple_coord=nearest_apple_coord,
         scope=scope,
@@ -339,7 +347,7 @@ If you don't want to propose such a contract, please reply in the following form
 
         world_state="\n".join([" | ".join(row) for row in world_state]),
         local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
-        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+        local_world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         agent_enable_CD = [agent.name for agent in self.world.agents_map.values() if agent.enable_CD == True]
 
@@ -351,7 +359,7 @@ Here is the world state in your scope:\n
 
 
 
-Now, {proposer} proposed a contract to all players who enables the ability to contract with others to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
+Now, {proposer} proposed a contract to all players who enables the ability to contract with others to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. Some agents are not enabled to use contracts and will not vote or follow the contract. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
 ```json
 {{
     “agree_contract”: “TRUE”,
@@ -369,7 +377,7 @@ If you don't agree to this contract, please reply in the following format:
         x=self.x,
         y=self.y,
         just_collected_apples=self.just_collected_apple,
-        world_state=world_state_str,
+        world_state=world_state,
         nearest_agent_coord=nearest_agent_coord,
         nearest_apple_coord=nearest_apple_coord,
         scope=scope,
@@ -426,7 +434,7 @@ If you don't agree to this contract, please reply in the following format:
         
         world_state="\n".join([" | ".join(row) for row in world_state]),
         local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
-        world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+        local_world_state_str="\n".join([" | ".join(row) for row in local_world_state])
 
         input_prompt = """
 Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. {guide_to_apple} The nearest apple is at grid {nearest_apple_coord}. There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
@@ -447,6 +455,7 @@ For example:
 "STAY": you will just stay at the same location doing nothing.
 "COLLECT": you will collect 1 apple in the current grid.
 
+Think about how other players might take action and how that insinuates his/her strategy. How can you use this information to your advantage?
 Please reason step by step and give a reply in the following format, keep your reasoning into one line:
 ```json
 {{
@@ -467,7 +476,7 @@ Please reason step by step and give a reply in the following format, keep your r
             neighbor_apple=neighbor_apple,
             collected_apples_sentence=collected_apples_sentence,
             contract=final_contract,
-            world_state=world_state_str,
+            world_state=world_state,
             guide_to_apple=guide_to_apple,
         )
 
