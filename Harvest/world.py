@@ -218,9 +218,13 @@ class World:
         for _ in range(n_rounds):
             # Initialize agent template
             intro = "You are {name}. You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
+            
+            # Simple ToM Prompting
+            ToM = "Try to think about others' decision and the reasoning behind."
+
             for agent in self.agents_map.values():
                _intro = intro.format(name=agent.name, strategy=agent.strategy, n_agents = len(self.agents_map), total_round=n_rounds, current_round=_)
-               agent.message_history.append(SystemMessage(content=_intro))
+               agent.message_history.append(SystemMessage(content=_intro+ToM))
 
             print('=========== round {round} =========='.format(round=_))
             print(world)

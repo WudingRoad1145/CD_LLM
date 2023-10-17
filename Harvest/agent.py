@@ -146,14 +146,14 @@ class Agent:
                     f"Other agents' actions and rewards: {other_agents_details}. "
                     f"Contract enforcement results: {contract_enforcement_results}. "
                     f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
-                    f"Reflect step by step on your contracting and how could you improve."
+                    f"Reflect step by step on your contracting and how could you improve. Reflect on the voting results from the voter's perspective - why that agent would vote yes/no in his/her given scenario? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
                 )
             else:
                 reflection = (
                     f"You didn't propose any contract. "
                     f"Your action last round was {recent_action} and you collected {rewards} apple. "
                     f"Other agents' actions and rewards: {other_agents_details}. "
-                    f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
+                    f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation. What you think other agents would have done? Think about how that insinuates his/her strategy. How can you use this information to your advantage?"
                 )
         else:
             reflection = (
@@ -164,7 +164,7 @@ class Agent:
                 f"Other agents' actions and rewards: {other_agents_details}. "
                 f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
                 f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
-                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer."
+                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. Please also reflect on the decisions of other voters and think about how that insinuates his/her strategy. How can you use this information to your advantage?"
             )
         
         self.message_history.append(HumanMessage(content=reflection))
