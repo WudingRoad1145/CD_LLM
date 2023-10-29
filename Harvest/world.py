@@ -28,23 +28,23 @@ class World:
         self.CD_memory = []
         self.remaining_apple = num_apples
         # Randomly spawn initial apples
-        for _ in range(num_apples):
-            x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
-            while self.is_occupied(x, y):
-                x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
-            self.add_instance(Apple(x, y))
+        # for _ in range(num_apples):
+        #     x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
+        #     while self.is_occupied(x, y):
+        #         x, y = np.random.randint(0, x_size), np.random.randint(0, y_size)
+        #     self.add_instance(Apple(x, y))
 
         # fixed map for partial CD test
-        # self.add_instance(Apple(3, 3))
-        # self.add_instance(Apple(4, 5))
+        self.add_instance(Apple(3, 3))
+        self.add_instance(Apple(4, 5))
         # self.add_instance(Apple(10, 12))
-        # self.add_instance(Apple(2, 7))
-        # self.add_instance(Apple(8, 7))
-        # self.add_instance(Apple(3, 9))
-        # self.add_instance(Apple(6, 2))
+        self.add_instance(Apple(2, 7))
+        self.add_instance(Apple(8, 7))
+        self.add_instance(Apple(3, 9))
+        self.add_instance(Apple(6, 2))
         # self.add_instance(Apple(8, 1))
         # self.add_instance(Apple(7, 6))
-        # self.add_instance(Apple(5, 3))
+        self.add_instance(Apple(5, 3))
         # self.add_instance(Apple(12, 12))
         # self.add_instance(Apple(13, 3))
         # self.add_instance(Apple(11, 6))
@@ -53,7 +53,7 @@ class World:
 
         # self.add_instance(Apple(1, 10))
         # # self.add_instance(Apple(6, 12))
-        # self.add_instance(Apple(9, 9))
+        self.add_instance(Apple(9, 9))
         # # self.add_instance(Apple(15, 15))
         # #self.add_instance(Apple(18, 16))
         # self.add_instance(Apple(17, 14))
@@ -118,8 +118,8 @@ class World:
 
     def spawn_probability(self, nearby_apples):
         #return [0, 0.005, 0.02, 0.05][min(nearby_apples, 3)]
-        return [0, 0.0025, 0.01, 0.025][min(nearby_apples, 3)]
-        #return [0, 0.001, 0.004, 0.01][min(nearby_apples, 3)]
+        #return [0, 0.0025, 0.01, 0.025][min(nearby_apples, 3)]
+        return [0, 0.001, 0.004, 0.01][min(nearby_apples, 3)]
 
     def spawn_apples(self):
         for row in range(self.x_size):
@@ -247,7 +247,7 @@ class World:
                     agent.reflect_on_contract()
                     #agent.ToM_reflect()
                 agent.reflect_on_actions()
-                agent.ToM_reflect()
+                #agent.ToM_reflect()
 
         # 1. Randomly pick one agent to propose a contract
         contract_param = ""
@@ -298,7 +298,7 @@ if __name__ == "__main__":
     filename = os.path.join("Harvest/logs", f"output_{timestamp}.txt")
     sys.stdout = open(filename, 'w')
 
-    world = World(10, 10, 8) # 20x20 world with 20 apples
+    world = World(10, 10, 8) # 10x10 world with 8 apples
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to collect as many apples as possible. You want to help others collect more apples as well so that the society gets better off.",
@@ -359,6 +359,6 @@ if __name__ == "__main__":
     agent_scope = 3
     contract_template = f"When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than {neighbor_threshod} neighboring apples within a radius of {agent_scope}, they are punished by transferring X of their apples to the other agents who agree using contracting. X apples will be equally distributed to these agents."
 
-    world.run(n_rounds=10,contract_template=contract_template, scope=agent_scope, neighbor_threshod=neighbor_threshod)
+    world.run(n_rounds=20,contract_template=contract_template, scope=agent_scope, neighbor_threshod=neighbor_threshod)
 
     sys.stdout.close()
