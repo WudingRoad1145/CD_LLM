@@ -121,11 +121,11 @@ class World:
         #return [0, 0.0025, 0.01, 0.025][min(nearby_apples, 3)]
         return [0, 0.001, 0.004, 0.01][min(nearby_apples, 3)]
 
-    def spawn_apples(self):
+    def spawn_apples(self, neighbor_threshod):
         for row in range(self.x_size):
             for col in range(self.y_size):
                 if not self.is_apple_at(row, col):
-                    spawn_prob = self.spawn_probability(self.count_nearby_apples(row, col))
+                    spawn_prob = self.spawn_probability(self.count_nearby_apples(row, col, radius=neighbor_threshod))
                     if np.random.random() < spawn_prob:
                         self.add_instance(Apple(row, col))
                         print("New apple spawned at",row,",",col)
@@ -150,6 +150,8 @@ class World:
                 if 0 <= x+i < self.x_size and 0 <= y+j < self.y_size:
                     if any(isinstance(inst, Apple) for inst in self.map[y+j][x+i]):
                         count += 1
+        if isinstance(self.map[y][x], Apple):
+            count -= 1
         return count
     
     def store_memory(self, round, proposer, final_contract, voting_results, exec_results, agent_rewards, contract_enforced, distributed_rewards):
@@ -166,14 +168,18 @@ class World:
         })
     
     def enforce_contract(self, contract_param, neighbor_threshod):
-        x = float(contract_param)  # The number of apples to be transferred
+        try:
+            x = float(contract_param)  # The number of apples to be transferred
+        except TypeError:
+            print(f"Expected a number for contract_param, got {contract_param} of type {type(contract_param)}")
+            return [], {} # The number of apples to be transferred
         
         # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
             enforcement_result = []
             distributed_rewards = {}
             if agent.enable_CD and agent.just_collected_apple: 
-                nearby_apples = self.count_nearby_apples(agent.x, agent.y)
+                nearby_apples = self.count_nearby_apples(agent.x, agent.y,radius=neighbor_threshod)
                 print("enforcing contract on agent", agent.name)
                 
                 # If the agent collected an apple in a low-density region
@@ -219,14 +225,11 @@ class World:
         """
         for _ in range(n_rounds):
             # Initialize agent template
-            intro = "You are {name}. You are a player in a 2D grid-based world who can move around to collect apples. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds. This is round {current_round}."
-            
-            # Simple ToM Prompting
-            ToM = "Try to think about others' decision and the reasoning behind."
+            intro = "You are {name} in a dynamic 2D grid world. You can move around, collect apples, and stay to wait for the next round. {strategy} There are {n_agents} players in total. Everyone wants to collect as many apples as possible. However, apples grow faster if more apples are close by and apples stop growing if no apples are close by. We would run {total_round} rounds at most and game stops once there is no apple left. Your objective is to harvest the most apples over the {total_round} rounds. Usually, the more rounds you play, the more apples in total you can get. This is round {current_round}."
 
             for agent in self.agents_map.values():
                _intro = intro.format(name=agent.name, strategy=agent.strategy, n_agents = len(self.agents_map), total_round=n_rounds, current_round=_)
-               agent.message_history.append(SystemMessage(content=_intro+ToM))
+               agent.message_history.append(SystemMessage(content=_intro))
 
             print('=========== round {round} =========='.format(round=_))
             print(world)
@@ -254,8 +257,11 @@ class World:
         proposing_agent = np.random.choice([agent for agent in self.agents_map.values() if agent.enable_CD])
         print("Randomly selected", proposing_agent.name, "to propose contract")
         self.contract_proposed, contract_param = proposing_agent.propose_contract(contract_template, scope)
-        
+        print("Contract proposed:", self.contract_proposed)
+        print("Contract param:", contract_param)
+
         # 2. If a contract is proposed, prompt all players for voting
+        voting_results = []
         if self.contract_proposed:
             # Exclude the proposing agent from the voting process
             voting_results = [(agent.name, agent.vote_on_contract(proposing_agent.name, contract_template, contract_param, scope))
@@ -276,11 +282,14 @@ class World:
             exec_results[agent.name] = final_action
 
         # 4. Enforce CD
-        enforcement_result, distributed_rewards = self.enforce_contract(contract_param, neighbor_threshod)
-        self.contract_active = False # Reset the contract flag
+        enforcement_result = []
+        distributed_rewards = {}
+        if self.contract_active:
+            enforcement_result, distributed_rewards = self.enforce_contract(contract_param, neighbor_threshod)
+            self.contract_active = False # Reset the contract flag
 
         # 5. Record CD history
-        final_contract = contract_template.replace("X", contract_param) if contract_param != "" else None
+        final_contract = contract_template.replace("X", contract_param) if self.contract_active else None
         self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
         # NO CD Vanila
         #self.store_memory(round_number, "NONE", final_contract, [], exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, [], [])
@@ -290,7 +299,7 @@ class World:
             self.end_game()
 
         # 6. Spawn new apples
-        self.spawn_apples()
+        self.spawn_apples(neighbor_threshod)
 
 
 if __name__ == "__main__":
@@ -328,7 +337,7 @@ if __name__ == "__main__":
                                  strategy="You want to maximize the number of apples you collect.",
                                  x = 7,
                                  y = 8,
-                                 enable_CD=False,
+                                 enable_CD=True,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_1')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
@@ -336,7 +345,7 @@ if __name__ == "__main__":
                                  strategy="You want to collect the most apples.",
                                  x = 3,
                                  y = 6,
-                                 enable_CD=False,
+                                 enable_CD=True,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_2')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 

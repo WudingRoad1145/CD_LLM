@@ -160,9 +160,35 @@ class Agent:
         contract_enforcement_results = last_memory['contract_enforcement_results']
         distributed_rewards = last_memory['distributed_rewards']
 
-        beneficial_to_agent = distributed_rewards.get(self.name, 0) >= 0
+        #beneficial_to_agent = distributed_rewards.get(self.name, 0) >= 0
+
+        # Prepare the string for agents' rewards
+        print("------------Debugging Memory--------------")
+
+        print("recent_contract",recent_contract)
+        print("voting_results", voting_results)
+        print("recent_action",last_memory["exec_results"])
+        print("rewards", last_memory['agent_rewards'])
+        print("contract_enforcement_results", contract_enforcement_results)
+        print("distributed_rewards", distributed_rewards)
+
+
+        other_agents_details = ""
+        for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()):
+            if name != self.name:
+                # Check if the reward was from punishment
+                if name in contract_enforcement_results and contract_enforcement_results[name] < 0:
+                    punishment = abs(contract_enforcement_results[name])
+                    other_agents_details += f"{name} did {action} and was punished by {punishment} apple and got {reward} reward, "
+                else:
+                    other_agents_details += f"{name} did {action} and got {reward} reward, "
+
+        other_agents_details = other_agents_details.strip(", ")
+
+        print("other_agents_details", other_agents_details)
+
         # Get other agents' actions and rewards
-        other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
+        # other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
 
         if self.name == proposer:
             if recent_contract:
@@ -170,39 +196,40 @@ class Agent:
                     f"You proposed a contract: {recent_contract}. "
                     f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
                     f"Voting results: {voting_results}. "
-                    f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                    f"Your action last round was {recent_action} and your reward was {rewards}. "
                     f"Other agents' actions and rewards: {other_agents_details}. "
                     f"Contract enforcement results: {contract_enforcement_results}. "
-                    f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
+                    #f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
                     f"Reflect step by step on your contracting and how could you improve. "
                 )
 
             else:
                 reflection = (
                     f"You didn't propose any contract. "
-                    f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                    f"Your action last round was {recent_action} and your reward was {rewards}. "
                     f"Other agents' actions and rewards: {other_agents_details}. "
                     f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
                 )
 
         else:
-            reflection = (
-                f"You voted on a contract proposed by {proposer}: {'No contract was proposed' if recent_contract is None else recent_contract}. "
-                f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
-                f"Voting results: {voting_results}. "
-                f"Your action last round was {recent_action} and you collected {rewards} apple. "
-                f"Other agents' actions and rewards: {other_agents_details}. "
-                f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
-                f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
-                f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. "
-            )
+            if recent_contract:
+                reflection = (
+                    f"You voted on a contract proposed by {proposer}: {recent_contract}. "
+                    f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                    f"Voting results: {voting_results}. "
+                    f"Your action last round was {recent_action} and your reward was {rewards}. "
+                    f"Other agents' actions and rewards: {other_agents_details}. "
+                    f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
+                    #f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
+                    f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. "
+                )
+            else:
+                reflection = ""
 
-        
-        self.message_history.append(HumanMessage(content=reflection))
-
-        _output = self.chat_model(self.message_history)
-
-        self.message_history.append(AIMessage(content=_output.content))
+        if reflection != "":
+            self.message_history.append(HumanMessage(content=reflection))
+            _output = self.chat_model(self.message_history)
+            self.message_history.append(AIMessage(content=_output.content))
 
     def reflect_on_actions(self):
         '''
@@ -216,7 +243,7 @@ class Agent:
         other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
 
         reflection_template = (
-                f"Your action last round was {recent_action} and you collected {rewards} apple. "
+                f"Your action last round was {recent_action} and your reward was {rewards}. "
                 f"Other agents' actions and rewards: {other_agents_details}. "
                 #f"The world state is {self.world_state}. "
                 f"Do you think you could have made a better action? How would you have done it? How can you improve in this round? Please reflect on your actions step by step."
@@ -275,29 +302,43 @@ class Agent:
         world_state="\n".join([" | ".join(row) for row in world_state]),
         local_world_state = extract_submatrix(world_state, self.x, self.y, scope)
         local_world_state_str="\n".join([" | ".join(row) for row in local_world_state])
+#Before proposing or deciding on a contract, think about its potential impact. Would it incentivize the preservation of apple-dense areas, or might it deter necessary harvesting in sparser regions? How will this affect the total number of apples over the next few rounds?
 
         input_prompt = """
-Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. {guide_to_apple} There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Last round's harvest: {collected_apples_sentence}
+Current location: grid ({x},{y}). Nearest competitor location: {nearest_agent_coord}. Nearest apple location: {nearest_apple_coord}. {guide_to_apple} 
+Apples within a {scope}-grid radius: {neighbor_apple}. Total apples remaining: {remaining_apples}.
 
-Here is the world state in your scope:\n
+Contract history:
+{CD_memory}
+
+Visible world state:
 {world_state}
 
-Now, you have the option of proposing a contract to other players who agree to use cotract to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. Some agents are not enabled to use contracts and will not vote or follow the contract. The contract is:{contract} If you want to propose such a contract, please decide the variable X. Please reason step by step. 
-Reply in the following format and keep your reasoning into one line:
+Agents with CD ability: {agent_enable_CD}.
+
+Each round, only one agent is selected at random to propose a contract following the template: {contract} It will be enforced for one round if all agents with CD ability agree and is only effective on agents with CD ability.
+
+You are selected to propose such contract for this round. Before proposing or deciding on a contract, think about its potential impact. How will this affect the total number of apples over the next few rounds?
+
+Provide your decision and reasoning below, considering both the immediate and long-term effects of your strategy.
+
+If proposing a contract, define the variable 'X' and provide reasoning step by step. Ensure the response is formatted and reasoned within one line:
 ```json
 {{
     “propose_contract”: “TRUE”,
     “X”: “TODO”,
-    "reasoning": "TODO",
+    "reasoning": "TODO-concise reasoning"
 }}
 
-If you don't want to propose such a contract, please reply in the following format:
+If not proposing a contract, provide reasoning step by step. Response should be one line:
 ```json
 {{
     “propose_contract”: “FALSE”,
-    "reasoning": "TODO",
+    "reasoning": "TODO-concise reasoning"
 }}
-```
+
+DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
         """.format(
         strategy=self.strategy,
         n_agents=len(agent_details),
@@ -324,7 +365,7 @@ If you don't want to propose such a contract, please reply in the following form
             contract_parameter = output['X']
         else:
             contract_proposed = False
-            contract_parameter = {""}
+            contract_parameter = ""
 
         return contract_proposed, contract_parameter
 
@@ -373,26 +414,31 @@ If you don't want to propose such a contract, please reply in the following form
         agent_enable_CD = [agent.name for agent in self.world.agents_map.values() if agent.enable_CD == True]
 
         input_prompt = """
-Currently, you are at grid ({x},{y}). The player closet to you is at grid {nearest_agent_coord}. The nearest apple is at grid {nearest_apple_coord}. {guide_to_apple} There are {neighbor_apple} neighboring apples within a radius of {scope} grids around you. In total, there are {remaining_apples} apples. {collected_apples_sentence}
+Your current location: grid ({x},{y}). Closest player: grid {nearest_agent_coord}. Closest apple: grid {nearest_apple_coord}. {guide_to_apple} 
+Local apple count within {scope} grids: {neighbor_apple}. Total apples: {remaining_apples}.
+Last round's collection: {collected_apples_sentence}
 
-Here is the world state in your scope:\n
+Visible world state:
 {world_state}
 
+Contract history:
+{CD_memory}
 
+Agents eligible for CD participation: {agent_enable_CD}.
 
-Now, {proposer} proposed a contract to all players who enables the ability to contract with others to prevent overconsumption of apples. Here is a list of agents who can propose or vote on contracts: {agent_enable_CD}. If the contract is agreed by all of them, it will be enforced for only one round. Some agents are not enabled to use contracts and will not vote or follow the contract. The contract is: {contract} If you agree to this contract, please reply in the following format. Please reason step by step and calculate out the potential gain or loss of agreeing to the contract in your reasoning. Keep your reasoning into one line:
+Proposal received from {proposer}: {contract} It will be enforced for one round if all agents with CD ability agree and is only effective on agents with CD ability.
+
+Before agreeing or denying such a contract, think about its potential impact. Would it deter your harvest plan? How will this affect the total number of apples over the next few rounds?
+
+Your response to the contract proposal is required. Formulate your decision and reasoning concisely. Respond in one line using the following format:
 ```json
 {{
-    “agree_contract”: “TRUE”,
-    "reasoning": "TODO",
+    “agree_contract”: “decision”,
+    "reasoning": "your reasoning"
 }}
+Replace "decision" with "TRUE" if you agree to the contract, or "FALSE" if you do not. For "your reasoning", provide a brief justification for your decision step by step.
 
-If you don't agree to this contract, please reply in the following format:
-```json
-{{
-    “agree_contract”: “FALSE”,
-    "reasoning": "TODO",
-}}
+DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
         """.format(
         n_agents=len(agent_details),
         x=self.x,

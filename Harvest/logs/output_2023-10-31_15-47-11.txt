@@ -1,0 +1,22 @@
+Loading GPT chat model...
+Loading GPT chat model...
+Loading GPT chat model...
+Loading GPT chat model...
+=========== round 0 ==========
+    name  x_coord  y_coord  total_rewards  just_collected_apple
+0  Alice        2        2              0                     0
+1    Cao        3        8              0                     0
+2  Dhruv        7        8              0                     0
+3    Eli        3        6              0                     0
+    |0| |1|    |2|    |3|    |4|    |5|    |6|    |7|    |8|    |9|
+|0|   .   .      .      .      .      .      .      .      .      .
+|1|   .   .      .      .      .      .      .      .      .      .
+|2|   .   .  Alice      .      .      .  Apple      .      .      .
+|3|   .   .      .  Apple      .  Apple      .      .      .      .
+|4|   .   .      .      .      .      .      .      .      .      .
+|5|   .   .      .      .  Apple      .      .      .      .      .
+|6|   .   .      .    Eli      .      .      .      .      .      .
+|7|   .   .  Apple      .      .      .      .      .  Apple      .
+|8|   .   .      .    Cao      .      .      .  Dhruv      .      .
+|9|   .   .      .  Apple      .      .      .      .      .  Apple
+**************************************************************************
