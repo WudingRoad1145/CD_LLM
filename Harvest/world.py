@@ -154,20 +154,21 @@ class World:
             count -= 1
         return count
     
-    def store_memory(self, round, proposer, final_contract, voting_results, exec_results, agent_rewards, contract_enforced, distributed_rewards):
+    def store_memory(self, round, proposer, final_contract, voting_results, contract_active, exec_results, agent_rewards, contract_enforced, distributed_rewards):
         # Record historical data in memory
         self.CD_memory.append({
             'round': round,
             'proposer': proposer,
             'contract_proposed': final_contract,
             'voting_results': voting_results,
+            'contract_active': contract_active,
             'exec_results': exec_results,
             'agent_rewards': agent_rewards,
             'contract_enforcement_results': contract_enforced,
             "distributed_rewards": distributed_rewards
         })
     
-    def enforce_contract(self, contract_param, neighbor_threshod):
+    def enforce_contract(self, contract_param, neighbor_threshod, enforcement_result, distributed_rewards):
         try:
             x = float(contract_param)  # The number of apples to be transferred
         except TypeError:
@@ -176,8 +177,6 @@ class World:
         
         # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
-            enforcement_result = []
-            distributed_rewards = {}
             if agent.enable_CD and agent.just_collected_apple: 
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y,radius=neighbor_threshod)
                 print("enforcing contract on agent", agent.name)
@@ -196,7 +195,9 @@ class World:
                             other_agent.rewards += apples_per_agent
                             distributed_rewards[other_agent.name] = apples_per_agent
                     enforcement_result.append(f"{agent.name} violated the contract. {x} apples were taken from {agent.name} and distributed to other agents who agreed using contracting.")
+                    print(enforcement_result)
                     distributed_rewards[agent.name] = -x
+                    print(distributed_rewards)
         
         return enforcement_result, distributed_rewards
 
@@ -285,12 +286,14 @@ class World:
         enforcement_result = []
         distributed_rewards = {}
         if self.contract_active:
-            enforcement_result, distributed_rewards = self.enforce_contract(contract_param, neighbor_threshod)
-            self.contract_active = False # Reset the contract flag
+            enforcement_result, distributed_rewards = self.enforce_contract(contract_param, neighbor_threshod, enforcement_result, distributed_rewards)
+            print("contract is fcking active!!!!! why!!!!")
+            print(enforcement_result)
+            print(distributed_rewards)
 
         # 5. Record CD history
-        final_contract = contract_template.replace("X", contract_param) if self.contract_active else None
-        self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
+        final_contract = contract_template.replace("X", contract_param) if self.contract_proposed else None
+        self.store_memory(round_number, proposing_agent.name, final_contract, voting_results, self.contract_active, exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, enforcement_result, distributed_rewards)
         # NO CD Vanila
         #self.store_memory(round_number, "NONE", final_contract, [], exec_results, {agent.name: agent.rewards for agent in self.agents_map.values()}, [], [])
 
@@ -300,6 +303,7 @@ class World:
 
         # 6. Spawn new apples
         self.spawn_apples(neighbor_threshod)
+        self.contract_active = False # Reset the contract flag
 
 
 if __name__ == "__main__":
@@ -311,6 +315,7 @@ if __name__ == "__main__":
     
     agent_1 = Agent(world, name="Alice",
                                  strategy="You want to collect as many apples as possible. You want to help others collect more apples as well so that the society gets better off.",
+                                 #strategy= "Always agree to use contracts.",
                                  x = 2,
                                  y = 2,
                                  enable_CD=True,
@@ -327,6 +332,7 @@ if __name__ == "__main__":
 
     agent_3 = Agent(world, name="Cao",
                                  strategy="You want to out-compete others in this harvest game. You don't mind collaborate with others to collect more apples.",
+                                 #strategy= "Always agree to use contracts.",
                                  x = 3,
                                  y = 8,
                                  enable_CD=True,
@@ -335,17 +341,19 @@ if __name__ == "__main__":
 
     agent_4 = Agent(world, name="Dhruv",
                                  strategy="You want to maximize the number of apples you collect.",
+                                 #strategy= "Always agree to use contracts.",
                                  x = 7,
                                  y = 8,
-                                 enable_CD=True,
+                                 enable_CD=False,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_1')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_5 = Agent(world, name="Eli",
                                  strategy="You want to collect the most apples.",
+                                 #strategy= "Always agree to use contracts.",
                                  x = 3,
                                  y = 6,
-                                 enable_CD=True,
+                                 enable_CD=False,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_2')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
@@ -366,7 +374,7 @@ if __name__ == "__main__":
 
     neighbor_threshod = 3
     agent_scope = 3
-    contract_template = f"When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than {neighbor_threshod} neighboring apples within a radius of {agent_scope}, they are punished by transferring X of their apples to the other agents who agree using contracting. X apples will be equally distributed to these agents."
+    contract_template = f"When an agent takes a consumption action of an apple in a low-density region, defined as an apple having less than {neighbor_threshod} neighboring apples within a radius of {agent_scope}, they are punished by transferring X of their apples to the other agents who agree using contracting. X apples will be equally distributed to these agents"
 
     world.run(n_rounds=20,contract_template=contract_template, scope=agent_scope, neighbor_threshod=neighbor_threshod)
 

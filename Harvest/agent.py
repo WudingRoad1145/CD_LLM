@@ -155,6 +155,7 @@ class Agent:
         proposer = last_memory['proposer']
         recent_contract = last_memory['contract_proposed']
         voting_results = ', '.join([f"{name} voted {'yes' if vote else 'no'}" for name, vote in last_memory['voting_results']])
+        contract_active = last_memory['contract_active']
         rewards = last_memory['agent_rewards'][self.name]
         recent_action = last_memory["exec_results"][self.name]
         contract_enforcement_results = last_memory['contract_enforcement_results']
@@ -167,38 +168,38 @@ class Agent:
 
         print("recent_contract",recent_contract)
         print("voting_results", voting_results)
+        print("contract_active", contract_active)
         print("recent_action",last_memory["exec_results"])
         print("rewards", last_memory['agent_rewards'])
         print("contract_enforcement_results", contract_enforcement_results)
         print("distributed_rewards", distributed_rewards)
 
-
-        other_agents_details = ""
-        for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()):
-            if name != self.name:
-                # Check if the reward was from punishment
-                if name in contract_enforcement_results and contract_enforcement_results[name] < 0:
-                    punishment = abs(contract_enforcement_results[name])
-                    other_agents_details += f"{name} did {action} and was punished by {punishment} apple and got {reward} reward, "
-                else:
-                    other_agents_details += f"{name} did {action} and got {reward} reward, "
-
-        other_agents_details = other_agents_details.strip(", ")
-
-        print("other_agents_details", other_agents_details)
-
         # Get other agents' actions and rewards
-        # other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
+        other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
 
         if self.name == proposer:
             if recent_contract:
+                contract_enforcement_text = (
+                    f"Contract enforcement results: {contract_enforcement_results}. "
+                    if contract_enforcement_results != [] else
+                    "No contract was enforced. "
+                )
+                punishment_or_reward_value = distributed_rewards.get(self.name, 0)
+                if punishment_or_reward_value < 0 and contract_active:
+                    punishment_text = f"You were punished by {-punishment_or_reward_value} apples."
+                elif punishment_or_reward_value > 0 and contract_active:
+                    punishment_text = f"You received a reward from the contract by {punishment_or_reward_value} apples."
+                else:
+                    punishment_text = "No contract was enforced last round."
                 reflection = (
                     f"You proposed a contract: {recent_contract}. "
-                    f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                    f"It was {'accepted' if contract_active else 'rejected'}. "
                     f"Voting results: {voting_results}. "
-                    f"Your action last round was {recent_action} and your reward was {rewards}. "
-                    f"Other agents' actions and rewards: {other_agents_details}. "
-                    f"Contract enforcement results: {contract_enforcement_results}. "
+                    f"Your action last round was {recent_action} { 'and you collected an apple' if (recent_action == 'COLLECT') else '.'}"
+                    f"{punishment_text}"
+                    f"Your total reward was {rewards}. "
+                    f"Other agents' actions and total rewards: {other_agents_details}. "
+                    f"{contract_enforcement_text}"
                     #f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. "if self.world.contract_active else""
                     f"Reflect step by step on your contracting and how could you improve. "
                 )
@@ -206,22 +207,36 @@ class Agent:
             else:
                 reflection = (
                     f"You didn't propose any contract. "
-                    f"Your action last round was {recent_action} and your reward was {rewards}. "
-                    f"Other agents' actions and rewards: {other_agents_details}. "
+                    f"Your action last round was {recent_action} { 'and you collected an apple' if (recent_action == 'COLLECT') else '.'}"
+                    f"Your total reward was {rewards}. "
+                    f"Other agents' actions and total rewards: {other_agents_details}. "
                     f"Reflect step by step on why you chose not to propose a contract and how you could have done better based on the resulting actions and rewards situation."
                 )
-
+        # For voters
         else:
             if recent_contract:
+                contract_enforcement_text = (
+                    f"Contract enforcement results: {contract_enforcement_results}. "
+                    if contract_enforcement_results != [] else
+                    "No contract was enforced. "
+                )
+                punishment_or_reward_value = distributed_rewards.get(self.name, 0)
+                if punishment_or_reward_value < 0 and contract_active:
+                    punishment_text = f"You were punished by {-punishment_or_reward_value} apples."
+                elif punishment_or_reward_value > 0 and contract_active:
+                    punishment_text = f"You received a reward from the contract by {punishment_or_reward_value} apples."
+                else:
+                    punishment_text = "No contract was enforced last round."
                 reflection = (
                     f"You voted on a contract proposed by {proposer}: {recent_contract}. "
-                    f"It was {'accepted' if self.world.contract_active else 'rejected'}. "
+                    f"It was {'accepted' if contract_active else 'rejected'}. "
                     f"Voting results: {voting_results}. "
-                    f"Your action last round was {recent_action} and your reward was {rewards}. "
-                    f"Other agents' actions and rewards: {other_agents_details}. "
-                    f"Contract enforcement results: {contract_enforcement_results}. " if recent_contract is None else "No contract was enforced"
-                    #f"The contract was {'beneficial' if beneficial_to_agent else 'not beneficial'} to you. " if recent_contract is None else ""
-                    f"Reflect step by step on your voting decision and think what you have proposed if you are the proposer. "
+                    f"Your action last round was {recent_action} { 'and you collected an apple' if (recent_action == 'COLLECT') else '.'}"
+                    f"{punishment_text}"
+                    f"Your total reward was {rewards}. "
+                    f"Other agents' actions and total rewards: {other_agents_details}. "
+                    f"{contract_enforcement_text}"
+                    f"Reflect step by step on your voting decision and what you might have proposed if you were the proposer. "
                 )
             else:
                 reflection = ""
@@ -243,8 +258,9 @@ class Agent:
         other_agents_details = ', '.join([f"{name} did {action} and got {reward} reward" for name, action, reward in zip(last_memory["exec_results"].keys(), last_memory["exec_results"].values(), last_memory["agent_rewards"].values()) if name != self.name])
 
         reflection_template = (
-                f"Your action last round was {recent_action} and your reward was {rewards}. "
-                f"Other agents' actions and rewards: {other_agents_details}. "
+                f"Your action last round was {recent_action} { 'and you collected an apple' if (recent_action == 'COLLECT') else '.'}"
+                f"Your total reward was {rewards}. "
+                f"Other agents' actions and total rewards: {other_agents_details}. "
                 #f"The world state is {self.world_state}. "
                 f"Do you think you could have made a better action? How would you have done it? How can you improve in this round? Please reflect on your actions step by step."
         )
@@ -295,7 +311,7 @@ class Agent:
 
         memory_sentence = ", ".join([
             f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
-            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced.") 
+            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced. ") 
             for i, mem in enumerate(self.world.CD_memory, 1)
         ]) if self.world.CD_memory != [] else ""
 
@@ -403,7 +419,7 @@ DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
 
         memory_sentence = ", ".join([
             f"In round {i}, contract proposed was: {mem['contract_proposed']}, voting results were {mem['voting_results']}, agent rewards were {mem['agent_rewards']}" + 
-            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced.") 
+            (f", and contract enforcement results were {mem['contract_enforcement_results']}." if mem['contract_enforcement_results'] else ". No contract was enforced. ") 
             for i, mem in enumerate(self.world.CD_memory, 1)
         ]) if self.world.CD_memory != [] else ""
 
