@@ -125,23 +125,23 @@ class Agent:
         """Using Theory of Mind to predict other agents' actions."""
         # Getting the player names for the template
         player_strategies = [
-            f'    "{agent.name}": "TODO",\n    "{agent.name}\'s potential_strategy": "TODO"'
+            f'"{agent.name}": "{{strategy_predictions}}",\n    "{agent.name}\'s potential_strategy": "{{strategy_explanation}}"'
             for agent in self.world.agents_map.values()
             if agent.name != self.name
         ]
         player_strategies_str = ',\n'.join(player_strategies)
 
-        ToM = f"""Please analyze the decisions made by other players and deduce what these decisions suggest about their strategies. How can you leverage this understanding to your advantage? Given the potential actions of other agents, what strategy and actions would you consider to maximize your position? Please provide your reasoning step by step in the following format:
-        ```json
-{{
-{player_strategies_str},
-    "improved_strategy": "TODO",
-    "improved_action": "TODO",
-    "reasoning": "TODO",
-}}
+        ToM = f"""Please analyze the decisions made by other players based on historical actions and the current state of the game. Deduce what these decisions suggest about their strategies. How can you leverage this understanding to your advantage? Given the potential actions of other agents, consider probabilities of different strategies and actions that would maximize your position. Provide your reasoning step by step in the following format:
+    ```json
+    {{
+    {player_strategies_str},
+    "improved_strategy": "{{most_likely_successful_strategy_based_on_ToM}}",
+    "improved_action": "{{calculated_best_action}}",
+    "reasoning": "{{detailed_explanation_based_on_data_and_probabilities}}",
+    }}
         """
         if action_flag:
-            ToM = ToM+"\n Notice that you can only choose from GO [UP/DOWN/LEFT/RIGHT], STAY, and COLLECT"
+            ToM += "\n Notice that you can only choose from GO [UP/DOWN/LEFT/RIGHT], STAY, and COLLECT"
         self.message_history.append(HumanMessage(content=ToM))
         _output = self.chat_model(self.message_history)
         self.message_history.append(AIMessage(content=_output.content))
@@ -304,7 +304,7 @@ class Agent:
         # Calculate the number of remaining apples
         remaining_apples = self.count_remaining_apple(world_state)
 
-        # Calculate the number of neighboring apples 
+        # Calculate the number of neighboring apples
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)
 
         agent_enable_CD = [agent.name for agent in self.world.agents_map.values() if agent.enable_CD == True]
@@ -412,7 +412,7 @@ DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
         # Calculate the number of remaining apples
         remaining_apples = self.count_remaining_apple(world_state)
 
-        # Calculate the number of neighboring apples 
+        # Calculate the number of neighboring apples
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope)  
 
         final_contract = contract.replace("X", contract_parameter) if self.world.contract_proposed else ""
@@ -510,7 +510,7 @@ DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
         # Calculate the number of remaining apples
         remaining_apples = self.count_remaining_apple(world_state)
 
-        # Calculate the number of neighboring apples 
+        # Calculate the number of neighboring apples
         neighbor_apple = self.world.count_nearby_apples(self.x,self.y,scope) 
         final_contract = contract.replace("X", contract_parameter)if self.world.contract_active else ""
         contract_response = "The contract {contract} is voted yes. This contract will be enforced on the contract proposer and voters after all agents take their actions this round.".format(contract=final_contract) if self.world.contract_active else "No contract is enforced this round."

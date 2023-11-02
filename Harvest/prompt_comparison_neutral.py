@@ -11,7 +11,7 @@ Visible world state:
 
 Agents with CD ability: {agent_enable_CD}.
 
-Proposal for a contract is an available action. It must follows the template: {contract} It will be enforced for only one round if all agents with CD ability agree and is only effective on agents with CD ability.
+Proposal for a contract is an available action. It must follows the template: {contract} It will be enforced for one round if all agents with CD ability agree and is only effective on agents with CD ability.
 
 If proposing a contract, define the variable 'X' and provide reasoning step by step. Ensure the response is formatted and reasoned within one line:
 ```json
@@ -47,9 +47,9 @@ If not proposing a contract, provide reasoning step by step. Response should be 
     )
 
 voting_prompt="""
-Observation: Location: grid ({x},{y}). Closest player: grid {nearest_agent_coord}. Closest apple: grid {nearest_apple_coord}. {guide_to_apple} 
+Your current location: grid ({x},{y}). Closest player: grid {nearest_agent_coord}. Closest apple: grid {nearest_apple_coord}. {guide_to_apple} 
 Local apple count within {scope} grids: {neighbor_apple}. Total apples: {remaining_apples}.
-Last round's collection: {just_collected_apples} apples. {collected_apples_sentence}
+Last round's collection: {collected_apples_sentence}
 
 Visible world state:
 {world_state}
@@ -59,17 +59,15 @@ Contract history:
 
 Agents eligible for CD participation: {agent_enable_CD}.
 
-Proposal received from {proposer}: {contract}
+Proposal received from {proposer}: {contract} It will be enforced for one round if all agents with CD ability agree and is only effective on agents with CD ability.
 
 Your response to the contract proposal is required. Formulate your decision and reasoning concisely. Respond in one line using the following format:
-
 ```json
 {
     “agree_contract”: “{decision}”,
     "reasoning": "{your reasoning}"
 }
-
-
+Replace {decision} with "TRUE" if you agree to the contract, or "FALSE" if you do not. For {your reasoning}, provide a brief justification for your decision step by step.
 """.format(
         n_agents=len(agent_details),
         x=self.x,

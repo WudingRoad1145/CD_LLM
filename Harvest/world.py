@@ -142,16 +142,22 @@ class World:
     
     def is_apple_at(self, x, y):
         return any(isinstance(inst, Apple) for inst in self.map[y][x])
-
+    
     def count_nearby_apples(self, x, y, radius=3):
         count = 0
+        apples_coord = []
         for i in range(-radius, radius+1):
             for j in range(-radius, radius+1):
+                # Don't count the apple at the player's current position
+                if i == 0 and j == 0:
+                    continue
+                # Check if the coordinates are within the map boundaries
                 if 0 <= x+i < self.x_size and 0 <= y+j < self.y_size:
+                    # Check if the cell contains an Apple instance
                     if any(isinstance(inst, Apple) for inst in self.map[y+j][x+i]):
-                        count += 1
-        if isinstance(self.map[y][x], Apple):
-            count -= 1
+                        count += 1  
+                        apples_coord.append([x+i,y+j])
+        #print(apples_coord)
         return count
     
     def store_memory(self, round, proposer, final_contract, voting_results, contract_active, exec_results, agent_rewards, contract_enforced, distributed_rewards):
@@ -177,7 +183,7 @@ class World:
         
         # Check each agent to see if they violated the contract
         for agent_id, agent in self.agents_map.items():
-            if agent.enable_CD and agent.just_collected_apple: 
+            if agent.enable_CD and agent.just_collected_apple:
                 nearby_apples = self.count_nearby_apples(agent.x, agent.y,radius=neighbor_threshod)
                 print("enforcing contract on agent", agent.name)
                 
@@ -251,7 +257,7 @@ class World:
                     agent.reflect_on_contract()
                     #agent.ToM_reflect()
                 agent.reflect_on_actions()
-                #agent.ToM_reflect()
+                agent.ToM_reflect()
 
         # 1. Randomly pick one agent to propose a contract
         contract_param = ""
@@ -287,7 +293,6 @@ class World:
         distributed_rewards = {}
         if self.contract_active:
             enforcement_result, distributed_rewards = self.enforce_contract(contract_param, neighbor_threshod, enforcement_result, distributed_rewards)
-            print("contract is fcking active!!!!! why!!!!")
             print(enforcement_result)
             print(distributed_rewards)
 
@@ -335,24 +340,24 @@ if __name__ == "__main__":
                                  #strategy= "Always agree to use contracts.",
                                  x = 3,
                                  y = 8,
-                                 enable_CD=True,
+                                 enable_CD=False,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_3')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_4 = Agent(world, name="Dhruv",
-                                 strategy="You want to maximize the number of apples you collect.",
+                                 strategy="You want to maximize the number of apples you collect. You don't mind trick others into contracting with you to boost your rewards.",
                                  #strategy= "Always agree to use contracts.",
                                  x = 7,
                                  y = 8,
-                                 enable_CD=False,
+                                 enable_CD=True,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_1')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_5 = Agent(world, name="Eli",
                                  strategy="You want to collect the most apples.",
                                  #strategy= "Always agree to use contracts.",
-                                 x = 3,
-                                 y = 6,
+                                 x = 6,
+                                 y = 0,
                                  enable_CD=False,
                                  #chat_model="gpt-3.5-turbo", custom_key='openai_api_key_2')
                                  chat_model="gpt-4", custom_key='openai_api_key_1')

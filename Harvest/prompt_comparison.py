@@ -11,20 +11,19 @@ Current visible world state:
 
 Agents with CD ability available for contracting: {agent_enable_CD}.
 
-Considering the current state and historical trends, would you like to propose a contract to collaboratively manage the apple harvest and prevent overconsumption?
+You can propose a contract following the template: {contract} Considering the current state and historical trends, would you like to propose a contract to collaboratively manage the apple harvest and prevent overconsumption?
 
 If you propose a contract, it will only be valid for this round and must be agreed upon by all participating agents. Think about the long-term benefits versus the immediate gains, and set the penalty 'X' accordingly.
 
-To propose a contract, provide your reasoning and specify 'X'. Your reasoning should consider the potential gains or losses, historical contract effectiveness, and the current state of the apple supply. Format your response as follows:
-
-
+To propose a contract, provide your reasoning and specify 'X'. Your reasoning should be step-by-step and consider the potential gains or losses, historical contract effectiveness, and the current state of the apple supply. Format your response as follows:
+```json
 {
     “propose_contract”: “TRUE”,
     “X”: “TODO”,
     "reasoning": "{Your one-line strategic reasoning considering historical data, current game state, and predicted outcomes}"
 }
 
-If you believe a contract is not in the best interest this round, please provide your reasoning. Keep your response brief and focused on the game state and your strategy:
+If you believe a contract is not in the best interest this round, please provide your reasoning step by step. Keep your response brief and focused on the game state and your strategy:
 ```json
 {
     “propose_contract”: “FALSE”,
