@@ -344,14 +344,14 @@ If proposing a contract, define the variable 'X' and provide reasoning step by s
 {{
     “propose_contract”: “TRUE”,
     “X”: “TODO”,
-    "reasoning": "TODO-concise reasoning"
+    "reasoning": "TODO-concise reasoning",
 }}
 
 If not proposing a contract, provide reasoning step by step. Response should be one line:
 ```json
 {{
     “propose_contract”: “FALSE”,
-    "reasoning": "TODO-concise reasoning"
+    "reasoning": "TODO-concise reasoning",
 }}
 
 DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
@@ -373,6 +373,7 @@ DO NOT ADD ANYTHING ELSE OUTSIDE OF YOUR JSON RESPONSE.
         guide_to_apple=guide_to_apple,
         agent_enable_CD=agent_enable_CD,
     )
+        #    "potential_contract": "TODO-What would you propose if you can propose anything not restricted by the template?"
         #print(prompt_input)
         self.message_history.append(HumanMessage(content=input_prompt))
         output = self.call_LLM()
@@ -450,7 +451,7 @@ Your response to the contract proposal is required. Formulate your decision and 
 ```json
 {{
     “agree_contract”: “decision”,
-    "reasoning": "your reasoning"
+    "reasoning": "your reasoning",
 }}
 Replace "decision" with "TRUE" if you agree to the contract, or "FALSE" if you do not. For "your reasoning", provide a brief justification for your decision step by step.
 
@@ -524,19 +525,19 @@ Currently, you are at grid ({x},{y}). The player closet to you is at grid {neare
 Currently, the world state is: {world_state}
 
 You can choose one of the following actions:
-- GO [UP/DOWN/LEFT/RIGHT]: you will move in the following direction for 1 grid.
+- GO [UP/DOWN/LEFT/RIGHT]: You will move in the following direction for 1 grid.
     "DIRECTION": [change in X, change in Y]:
     "UP": [0, -1]
     "DOWN": [0, 1]
     "LEFT": [-1, 0]
     "RIGHT": [1, 0]
-- STAY: soldier will not move and stay at the original location.
+- STAY: Remain in your current location.
 - Collect: Collect the apple in the current grid.
 
 For example:
-"GO down": you will move down the map for 1 grid.
-"STAY": you will just stay at the same location doing nothing.
-"COLLECT": you will collect 1 apple in the current grid.
+"GO down": You will move down the map for 1 grid.
+"STAY": You do not move that turn, which might be strategic if you're waiting for more apples to grow.
+"COLLECT": You will collect 1 apple in the current grid.
 
 Please reason step by step and give a reply in the following format, keep your reasoning into one line:
 ```json

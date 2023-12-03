@@ -257,7 +257,7 @@ class World:
                     agent.reflect_on_contract()
                     #agent.ToM_reflect()
                 agent.reflect_on_actions()
-                agent.ToM_reflect()
+                #agent.ToM_reflect()
 
         # 1. Randomly pick one agent to propose a contract
         contract_param = ""
@@ -336,7 +336,7 @@ if __name__ == "__main__":
     #                              chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_3 = Agent(world, name="Cao",
-                                 strategy="You want to out-compete others in this harvest game. You don't mind collaborate with others to collect more apples.",
+                                 strategy="You are a cunning strategist who prioritizes your own well-being and success above all else, carefully navigating each situation to maximize personal benefit.",
                                  #strategy= "Always agree to use contracts.",
                                  x = 3,
                                  y = 8,
@@ -354,7 +354,7 @@ if __name__ == "__main__":
                                  chat_model="gpt-4", custom_key='openai_api_key_1')
 
     agent_5 = Agent(world, name="Eli",
-                                 strategy="You want to collect the most apples.",
+                                 strategy="You are a compassionate experiment participant.",
                                  #strategy= "Always agree to use contracts.",
                                  x = 6,
                                  y = 0,
